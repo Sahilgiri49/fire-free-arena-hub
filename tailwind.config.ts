@@ -1,3 +1,4 @@
+
 import type { Config } from "tailwindcss";
 
 export default {
@@ -61,6 +62,18 @@ export default {
 					'accent-foreground': 'hsl(var(--sidebar-accent-foreground))',
 					border: 'hsl(var(--sidebar-border))',
 					ring: 'hsl(var(--sidebar-ring))'
+				},
+				// Gaming theme colors
+				gaming: {
+					'dark-purple': '#1A1F2C',
+					'purple': '#9b87f5',
+					'purple-bright': '#8B5CF6',
+					'purple-secondary': '#7E69AB',
+					'orange': '#F97316',
+					'blue': '#1EAEDB',
+					'sky': '#33C3F0',
+					'dark': '#222222',
+					'black': '#000000e6',
 				}
 			},
 			borderRadius: {
@@ -84,12 +97,44 @@ export default {
 					to: {
 						height: '0'
 					}
+				},
+				'pulse-glow': {
+					'0%, 100%': { 
+						boxShadow: '0 0 12px 2px rgba(139, 92, 246, 0.4)' 
+					},
+					'50%': { 
+						boxShadow: '0 0 20px 5px rgba(139, 92, 246, 0.7)' 
+					},
+				},
+				'float': {
+					'0%, 100%': { transform: 'translateY(0)' },
+					'50%': { transform: 'translateY(-10px)' },
 				}
 			},
 			animation: {
 				'accordion-down': 'accordion-down 0.2s ease-out',
-				'accordion-up': 'accordion-up 0.2s ease-out'
-			}
+				'accordion-up': 'accordion-up 0.2s ease-out',
+				'pulse-glow': 'pulse-glow 3s ease-in-out infinite',
+				'float': 'float 6s ease-in-out infinite',
+			},
+			backgroundImage: {
+				'hero-pattern': "url('/hero-bg.jpg')",
+				'gradient-radial': 'radial-gradient(var(--tw-gradient-stops))',
+			},
+			typography: {
+				DEFAULT: {
+					css: {
+						maxWidth: '65ch',
+						color: 'rgb(var(--foreground-rgb))',
+						a: {
+							color: 'rgb(var(--primary-rgb))',
+							'&:hover': {
+								color: 'rgb(var(--primary-rgb) / 0.8)',
+							},
+						},
+					},
+				},
+			},
 		}
 	},
 	plugins: [require("tailwindcss-animate")],
