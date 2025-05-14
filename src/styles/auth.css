@@ -1,0 +1,22 @@
+
+.gamer-card {
+  background: rgba(23, 18, 40, 0.8);
+  border: 1px solid rgba(138, 43, 226, 0.3);
+  border-radius: 0.75rem;
+  backdrop-filter: blur(10px);
+  box-shadow: 0 8px 16px rgba(0, 0, 0, 0.3), 0 0 10px rgba(138, 43, 226, 0.2);
+  transition: all 0.3s ease;
+}
+
+.gamer-card:hover {
+  border-color: rgba(138, 43, 226, 0.5);
+  box-shadow: 0 12px 24px rgba(0, 0, 0, 0.4), 0 0 15px rgba(138, 43, 226, 0.3);
+}
+
+.text-gradient {
+  background: linear-gradient(90deg, #a855f7 0%, #3b82f6 100%);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+  color: transparent;
+}
