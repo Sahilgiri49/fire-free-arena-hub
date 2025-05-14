@@ -4,6 +4,7 @@ import { Link } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Trophy, Users, Calendar, Video, Bell, Menu, X } from "lucide-react";
 import { cn } from "@/lib/utils";
+import NavbarAuth from "./NavbarAuth";
 
 const Navbar = () => {
   const [isOpen, setIsOpen] = useState(false);
@@ -44,19 +45,7 @@ const Navbar = () => {
           </nav>
 
           <div className="hidden md:flex items-center gap-4">
-            <Button
-              variant="ghost"
-              className="hover:bg-gaming-purple/20 text-white/90 transition-colors"
-              size="sm"
-            >
-              Login
-            </Button>
-            <Button
-              className="bg-gaming-purple hover:bg-gaming-purple-bright text-white transition-colors"
-              size="sm"
-            >
-              Register
-            </Button>
+            <NavbarAuth />
           </div>
 
           {/* Mobile Navigation Button */}
@@ -89,17 +78,7 @@ const Navbar = () => {
             </Link>
           ))}
           <div className="flex flex-col mt-4 gap-3 px-4">
-            <Button
-              variant="ghost"
-              className="hover:bg-gaming-purple/20 text-white/90 transition-colors w-full justify-start"
-            >
-              Login
-            </Button>
-            <Button
-              className="bg-gaming-purple hover:bg-gaming-purple-bright text-white transition-colors w-full"
-            >
-              Register
-            </Button>
+            <NavbarAuth isMobile={true} closeMenu={() => setIsOpen(false)} />
           </div>
         </nav>
       </div>

@@ -8,7 +8,7 @@ import { Input } from "@/components/ui/input";
 import { useAuth } from "@/context/AuthContext";
 import { useNavigate } from "react-router-dom";
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form";
-import { toast } from "@/components/ui/use-toast";
+import { toast } from "@/hooks/use-toast";
 
 const formSchema = z.object({
   email: z.string().email({ message: "Please enter a valid email address" }),
@@ -37,11 +37,13 @@ const LoginForm = () => {
       const { error } = await signIn(values.email, values.password);
       
       if (error) {
+        console.error("Login error:", error);
         toast({
           title: "Login failed",
-          description: error.message,
+          description: error.message || "Invalid email or password",
           variant: "destructive",
         });
+        setIsLoading(false);
         return;
       }
       
@@ -52,7 +54,7 @@ const LoginForm = () => {
       
       navigate("/");
     } catch (err) {
-      console.error(err);
+      console.error("Unexpected error during login:", err);
       toast({
         title: "Login failed",
         description: "An unexpected error occurred. Please try again.",

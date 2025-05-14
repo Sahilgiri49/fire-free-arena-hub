@@ -5,13 +5,15 @@ import { useAuth } from "@/context/AuthContext";
 interface ProtectedRouteProps {
   children: React.ReactNode;
   redirectTo?: string;
+  adminOnly?: boolean;
 }
 
 const ProtectedRoute = ({ 
   children, 
-  redirectTo = "/login" 
+  redirectTo = "/login",
+  adminOnly = false
 }: ProtectedRouteProps) => {
-  const { user, isLoading } = useAuth();
+  const { user, profile, isLoading } = useAuth();
 
   if (isLoading) {
     return (
@@ -21,8 +23,14 @@ const ProtectedRoute = ({
     );
   }
 
+  // If not logged in, redirect to login
   if (!user) {
     return <Navigate to={redirectTo} replace />;
+  }
+
+  // If admin-only route and user is not admin, redirect to home
+  if (adminOnly && !profile?.is_admin) {
+    return <Navigate to="/" replace />;
   }
 
   return <>{children}</>;

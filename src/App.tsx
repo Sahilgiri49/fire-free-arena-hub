@@ -16,16 +16,18 @@ import News from "./pages/News";
 import Login from "./pages/Login";
 import Register from "./pages/Register";
 import Profile from "./pages/Profile";
+import AdminDashboard from "./pages/admin/AdminDashboard";
+import AdminTournaments from "./pages/admin/AdminTournaments";
+import AdminLeaderboard from "./pages/admin/AdminLeaderboard";
 
+// Create a new QueryClient instance outside the component
 const queryClient = new QueryClient();
 
 const App = () => (
-  <QueryClientProvider client={queryClient}>
-    <AuthProvider>
-      <TooltipProvider>
-        <Toaster />
-        <Sonner />
-        <BrowserRouter>
+  <BrowserRouter>
+    <QueryClientProvider client={queryClient}>
+      <AuthProvider>
+        <TooltipProvider>
           <Routes>
             <Route path="/" element={<Index />} />
             <Route path="/tournaments" element={<Tournaments />} />
@@ -40,12 +42,30 @@ const App = () => (
                 <Profile />
               </ProtectedRoute>
             } />
+            {/* Admin routes */}
+            <Route path="/admin" element={
+              <ProtectedRoute adminOnly={true}>
+                <AdminDashboard />
+              </ProtectedRoute>
+            } />
+            <Route path="/admin/tournaments" element={
+              <ProtectedRoute adminOnly={true}>
+                <AdminTournaments />
+              </ProtectedRoute>
+            } />
+            <Route path="/admin/leaderboard" element={
+              <ProtectedRoute adminOnly={true}>
+                <AdminLeaderboard />
+              </ProtectedRoute>
+            } />
             <Route path="*" element={<NotFound />} />
           </Routes>
-        </BrowserRouter>
-      </TooltipProvider>
-    </AuthProvider>
-  </QueryClientProvider>
+          <Toaster />
+          <Sonner />
+        </TooltipProvider>
+      </AuthProvider>
+    </QueryClientProvider>
+  </BrowserRouter>
 );
 
 export default App;
