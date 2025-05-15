@@ -1,4 +1,3 @@
-
 import React from "react";
 import { Calendar, ArrowRight } from "lucide-react";
 import { cn } from "@/lib/utils";
@@ -37,6 +36,7 @@ const NewsCard = ({
             src={image}
             alt={title}
             className="w-full h-48 md:h-full object-cover transition-transform duration-500 group-hover:scale-105"
+            loading="lazy"
           />
           <div 
             className={cn(

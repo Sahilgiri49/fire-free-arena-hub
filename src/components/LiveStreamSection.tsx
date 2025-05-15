@@ -1,4 +1,3 @@
-
 import React from "react";
 import { Video, Users, ArrowRight } from "lucide-react";
 import { Button } from "@/components/ui/button";
@@ -37,6 +36,7 @@ const StreamCard = ({
             "w-full object-cover transition-transform duration-500 group-hover:scale-105",
             featured ? "h-72" : "h-48"
           )}
+          loading="lazy"
         />
         <div className="absolute inset-0 bg-gradient-to-t from-gaming-dark-purple via-transparent to-transparent" />
         

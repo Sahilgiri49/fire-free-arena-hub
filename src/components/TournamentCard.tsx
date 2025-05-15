@@ -283,7 +283,7 @@ const TournamentCard: React.FC<TournamentCardProps> = (props) => {
             </DialogDescription>
           </DialogHeader>
           <div className="flex flex-col items-center gap-4 py-4">
-            <img src="/qr-upi.png" alt="UPI QR Code" className="w-40 h-40 border rounded-lg" onError={(e) => { e.currentTarget.src = "https://via.placeholder.com/150?text=QR+Code"; }} />
+            <img src="https://raw.githubusercontent.com/Sahilgiri49/fire-free-arena-hub/main/assest/NaviQR_SAHIL%20VILASRAV%20GIRI_15052025084619005.png" alt="UPI QR Code" className="w-40 h-40 border rounded-lg" onError={(e) => { e.currentTarget.src = "https://via.placeholder.com/150?text=QR+Code"; }} />
             <div className="text-center">
               <div className="font-semibold text-lg">UPI ID:</div>
               <div className="text-gaming-purple font-bold text-xl mb-2">7888075193@naviaxis</div>

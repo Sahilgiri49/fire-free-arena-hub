@@ -1,11 +1,28 @@
-
-import React from "react";
+import React, { useState, useEffect } from "react";
 import { ArrowRight } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import NewsCard from "@/components/NewsCard";
+import { supabase } from "@/integrations/supabase/client";
 
 const NewsSection = () => {
-  const news = [
+  const [news, setNews] = useState<any[]>([]);
+  const [isLoading, setIsLoading] = useState(true);
+
+  useEffect(() => {
+    const fetchNews = async () => {
+      setIsLoading(true);
+      const { data, error } = await supabase
+        .from("news")
+        .select("*")
+        .order("published_at", { ascending: false });
+      if (!error) setNews(data || []);
+      setIsLoading(false);
+    };
+    fetchNews();
+  }, []);
+
+  // Fallback mock data
+  const mockNews = [
     {
       title: "Free Fire Pro League Season 5 Announcement",
       excerpt: "The biggest Free Fire tournament of the year is back with Season 5! Registration opens next week with a total prize pool of ₹2,000,000. Teams from all over India will compete for the ultimate championship.",
@@ -33,6 +50,8 @@ const NewsSection = () => {
     },
   ];
 
+  const displayNews = news.length > 0 ? news : mockNews;
+
   return (
     <div className="container mx-auto px-4 py-16">
       <div className="flex justify-between items-center mb-8">
@@ -53,11 +72,26 @@ const NewsSection = () => {
         </Button>
       </div>
 
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-        {news.map((item, index) => (
-          <NewsCard key={index} {...item} />
-        ))}
-      </div>
+      {isLoading ? (
+        <div className="flex justify-center items-center py-20">
+          <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-gaming-purple"></div>
+        </div>
+      ) : (
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+          {displayNews.map((item, index) => (
+            <NewsCard
+              key={item.id || index}
+              title={item.title}
+              excerpt={item.content || item.excerpt}
+              image={item.image_url || item.image}
+              date={item.published_at ? new Date(item.published_at).toLocaleDateString() : item.date}
+              category={item.category}
+              url={"/news"}
+              featured={item.is_featured || item.featured}
+            />
+          ))}
+        </div>
+      )}
     </div>
   );
 };

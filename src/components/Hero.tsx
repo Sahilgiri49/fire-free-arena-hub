@@ -1,9 +1,10 @@
-
 import React from "react";
 import { Button } from "@/components/ui/button";
 import { Calendar, Trophy, Users } from "lucide-react";
+import { useNavigate } from "react-router-dom";
 
 const Hero = () => {
+  const navigate = useNavigate();
   return (
     <div className="relative overflow-hidden">
       {/* Background Gradient Effect */}
@@ -24,6 +25,7 @@ const Hero = () => {
               <Button
                 size="lg"
                 className="bg-gaming-purple hover:bg-gaming-purple-bright text-white transition-all group"
+                onClick={() => navigate("/tournaments")}
               >
                 <Trophy className="mr-2 h-5 w-5 group-hover:animate-float" />
                 Join Tournament
@@ -32,6 +34,7 @@ const Hero = () => {
                 size="lg"
                 variant="outline"
                 className="border-gaming-purple/50 text-gaming-purple hover:bg-gaming-purple/20 hover:text-white transition-all"
+                onClick={() => navigate("/schedule")}
               >
                 <Calendar className="mr-2 h-5 w-5" />
                 View Schedule
@@ -62,6 +65,7 @@ const Hero = () => {
                 src="https://images.unsplash.com/photo-1605810230434-7631ac76ec81" 
                 alt="Free Fire Tournament" 
                 className="w-full h-auto rounded-lg object-cover aspect-[4/3]"
+                loading="lazy"
               />
             </div>
             

@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from "react";
 import Navbar from "@/components/Navbar";
 import Footer from "@/components/Footer";
@@ -79,7 +78,6 @@ const AdminNews = () => {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    
     try {
       const { data: userData } = await supabase.auth.getUser();
       if (!userData.user) {
@@ -90,18 +88,17 @@ const AdminNews = () => {
         });
         return;
       }
-      
       const newsData = {
         title: formData.title,
         content: formData.content,
         category: formData.category,
         image_url: formData.imageUrl || null,
-        is_featured: formData.isFeatured,
-        author_id: userData.user.id
+        is_featured: !!formData.isFeatured,
+        author_id: userData.user.id,
+        published_at: new Date().toISOString(),
       };
-      
+      console.log("newsData being sent:", newsData);
       let result;
-      
       if (isEditing && currentNewsId) {
         result = await supabase
           .from("news")
@@ -112,16 +109,13 @@ const AdminNews = () => {
           .from("news")
           .insert([newsData]);
       }
-      
       if (result.error) {
         throw result.error;
       }
-      
       toast({
         title: "Success",
         description: isEditing ? "News updated successfully" : "News published successfully",
       });
-      
       setFormData({
         title: "",
         content: "",
@@ -129,11 +123,9 @@ const AdminNews = () => {
         imageUrl: "",
         isFeatured: false
       });
-      
       setIsCreating(false);
       setIsEditing(false);
       setCurrentNewsId(null);
-      
       fetchNews();
     } catch (error) {
       console.error("Error saving news:", error);

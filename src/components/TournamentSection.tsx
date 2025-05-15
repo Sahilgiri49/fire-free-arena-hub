@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from "react";
 import { ArrowRight } from "lucide-react";
 import { Button } from "@/components/ui/button";
@@ -7,6 +6,8 @@ import { supabase } from "@/integrations/supabase/client";
 import { Tables } from "@/integrations/supabase/types";
 import { useNavigate } from "react-router-dom";
 import { toast } from "@/hooks/use-toast";
+
+const MemoTournamentCard = React.memo(TournamentCard);
 
 const TournamentSection = () => {
   const navigate = useNavigate();
@@ -128,7 +129,7 @@ const TournamentSection = () => {
       ) : (
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
           {displayTournaments.map((tournament, index) => (
-            <TournamentCard 
+            <MemoTournamentCard 
               key={tournament.id || index} 
               tournament={tournament as Tables<"tournaments">}
             />
