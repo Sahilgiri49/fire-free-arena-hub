@@ -1,11 +1,11 @@
-
-import React from "react";
+import React, { useState, useEffect } from "react";
 import Navbar from "@/components/Navbar";
 import Footer from "@/components/Footer";
 import { Calendar as CalendarIcon, Calendar, Users, Trophy, Video, ArrowRight } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { supabase } from "@/integrations/supabase/client";
 
 interface MatchCardProps {
   team1: string;
@@ -101,77 +101,21 @@ const MatchCard = ({
 };
 
 const Schedule = () => {
-  const upcomingMatches = [
-    {
-      team1: "Neon Strikers",
-      team2: "Phoenix Squad",
-      team1Logo: "https://images.unsplash.com/photo-1526374965328-7f61d4dc18c5?w=100&h=100&fit=crop",
-      team2Logo: "https://images.unsplash.com/photo-1605810230434-7631ac76ec81?w=100&h=100&fit=crop",
-      date: "May 25, 2025",
-      time: "18:00 IST",
-      tournament: "Free Fire Pro League Season 5",
-      round: "Quarter Finals",
-      hasLivestream: true
-    },
-    {
-      team1: "Team Inferno",
-      team2: "Ghost Hunters",
-      team1Logo: "https://images.unsplash.com/photo-1487058792275-0ad4aaf24ca7?w=100&h=100&fit=crop",
-      team2Logo: "https://images.unsplash.com/photo-1470071459604-3b5ec3a7fe05?w=100&h=100&fit=crop",
-      date: "May 25, 2025",
-      time: "20:00 IST",
-      tournament: "Free Fire Pro League Season 5",
-      round: "Quarter Finals",
-      hasLivestream: true
-    },
-    {
-      team1: "Elite Warriors",
-      team2: "Dragon Slayers",
-      team1Logo: "https://images.unsplash.com/photo-1526374965328-7f61d4dc18c5?w=100&h=100&fit=crop",
-      team2Logo: "https://images.unsplash.com/photo-1605810230434-7631ac76ec81?w=100&h=100&fit=crop",
-      date: "May 26, 2025",
-      time: "18:00 IST",
-      tournament: "Free Fire Pro League Season 5",
-      round: "Quarter Finals",
-      hasLivestream: false
-    },
-    {
-      team1: "Shadow Wolves",
-      team2: "Nova Esports",
-      team1Logo: "https://images.unsplash.com/photo-1487058792275-0ad4aaf24ca7?w=100&h=100&fit=crop",
-      team2Logo: "https://images.unsplash.com/photo-1470071459604-3b5ec3a7fe05?w=100&h=100&fit=crop",
-      date: "May 26, 2025",
-      time: "20:00 IST",
-      tournament: "Free Fire Pro League Season 5",
-      round: "Quarter Finals",
-      hasLivestream: false
-    },
-  ];
+  const [matches, setMatches] = useState<any[]>([]);
+  const [isLoading, setIsLoading] = useState(true);
 
-  const pastMatches = [
-    {
-      team1: "Neon Strikers",
-      team2: "Ghost Hunters",
-      team1Logo: "https://images.unsplash.com/photo-1526374965328-7f61d4dc18c5?w=100&h=100&fit=crop",
-      team2Logo: "https://images.unsplash.com/photo-1470071459604-3b5ec3a7fe05?w=100&h=100&fit=crop",
-      date: "May 20, 2025",
-      time: "18:00 IST",
-      tournament: "Free Fire Pro League Season 5",
-      round: "Round of 16",
-      hasLivestream: false
-    },
-    {
-      team1: "Team Inferno",
-      team2: "Dragon Slayers",
-      team1Logo: "https://images.unsplash.com/photo-1487058792275-0ad4aaf24ca7?w=100&h=100&fit=crop",
-      team2Logo: "https://images.unsplash.com/photo-1605810230434-7631ac76ec81?w=100&h=100&fit=crop",
-      date: "May 20, 2025",
-      time: "20:00 IST",
-      tournament: "Free Fire Pro League Season 5",
-      round: "Round of 16",
-      hasLivestream: false
-    },
-  ];
+  useEffect(() => {
+    const fetchMatches = async () => {
+      setIsLoading(true);
+      const { data, error } = await supabase
+        .from('matches')
+        .select('*, tournaments (title)')
+        .order('start_time', { ascending: true });
+      if (!error) setMatches(data || []);
+      setIsLoading(false);
+    };
+    fetchMatches();
+  }, []);
 
   return (
     <div className="min-h-screen flex flex-col">
@@ -196,14 +140,31 @@ const Schedule = () => {
             </TabsList>
             <TabsContent value="upcoming" className="mt-6">
               <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                {upcomingMatches.map((match, index) => (
-                  <MatchCard key={index} {...match} />
-                ))}
+                {isLoading ? (
+                  <div className="col-span-full flex justify-center items-center py-12">
+                    <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-gaming-purple"></div>
+                  </div>
+                ) : (
+                  matches.map((match) => (
+                    <MatchCard
+                      key={match.id}
+                      team1={match.team1 || "TBD"}
+                      team2={match.team2 || "TBD"}
+                      team1Logo={match.team1Logo || ""}
+                      team2Logo={match.team2Logo || ""}
+                      date={match.start_time ? new Date(match.start_time).toLocaleDateString() : "TBD"}
+                      time={match.start_time ? new Date(match.start_time).toLocaleTimeString() : "TBD"}
+                      tournament={match.tournaments?.title || "Unknown"}
+                      round={`Round ${match.round_number}`}
+                      hasLivestream={!!match.stream_url}
+                    />
+                  ))
+                )}
               </div>
             </TabsContent>
             <TabsContent value="past" className="mt-6">
               <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                {pastMatches.map((match, index) => (
+                {matches.map((match, index) => (
                   <MatchCard key={index} {...match} />
                 ))}
               </div>

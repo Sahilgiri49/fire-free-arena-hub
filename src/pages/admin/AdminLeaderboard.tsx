@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from "react";
 import Navbar from "@/components/Navbar";
 import Footer from "@/components/Footer";
@@ -26,9 +25,20 @@ const AdminLeaderboard = () => {
   const [isLoading, setIsLoading] = useState(true);
   const [searchQuery, setSearchQuery] = useState("");
   const [editingPlayer, setEditingPlayer] = useState<PlayerStats | null>(null);
+  const [showAddForm, setShowAddForm] = useState(false);
+  const [addForm, setAddForm] = useState({
+    profile_id: '',
+    total_matches: 0,
+    wins: 0,
+    kills: 0,
+    deaths: 0,
+    assists: 0,
+  });
+  const [profiles, setProfiles] = useState<{id: string, username: string, full_name: string}[]>([]);
 
   useEffect(() => {
     fetchPlayerStats();
+    fetchProfiles();
   }, []);
 
   const fetchPlayerStats = async () => {
@@ -63,6 +73,16 @@ const AdminLeaderboard = () => {
       });
     } finally {
       setIsLoading(false);
+    }
+  };
+
+  const fetchProfiles = async () => {
+    // Fetch all profiles for player selection
+    const { data, error } = await supabase
+      .from('profiles')
+      .select('id, username, full_name');
+    if (!error && data) {
+      setProfiles(data);
     }
   };
 
@@ -109,6 +129,24 @@ const AdminLeaderboard = () => {
     }
   };
 
+  const handleAddPlayer = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!addForm.profile_id) return toast({ title: 'Error', description: 'Select a player profile', variant: 'destructive' });
+    try {
+      const kd_ratio = addForm.deaths > 0 ? Number((addForm.kills / addForm.deaths).toFixed(2)) : addForm.kills;
+      const { error } = await supabase.from('player_stats').insert([
+        { ...addForm, kd_ratio }
+      ]);
+      if (error) throw error;
+      toast({ title: 'Player Added', description: 'Player stats added to leaderboard!' });
+      setShowAddForm(false);
+      setAddForm({ profile_id: '', total_matches: 0, wins: 0, kills: 0, deaths: 0, assists: 0 });
+      fetchPlayerStats();
+    } catch (error) {
+      toast({ title: 'Add Failed', description: 'Failed to add player', variant: 'destructive' });
+    }
+  };
+
   const filteredStats = playerStats.filter(player => 
     player.player_name.toLowerCase().includes(searchQuery.toLowerCase())
   );
@@ -123,14 +161,72 @@ const AdminLeaderboard = () => {
               <h1 className="text-3xl font-bold text-gradient">Leaderboard Management</h1>
               <p className="text-white/70">Update player statistics and rankings</p>
             </div>
-            <Button
-              onClick={() => navigate("/admin")}
-              variant="outline"
-              className="border-gaming-purple/50 text-gaming-purple hover:bg-gaming-purple/20 hover:text-white"
-            >
-              Back to Dashboard
-            </Button>
+            <div className="flex gap-2">
+              <Button
+                onClick={() => setShowAddForm(true)}
+                className="bg-green-600 hover:bg-green-700 text-white"
+              >
+                Add Player
+              </Button>
+              <Button
+                onClick={() => navigate("/admin")}
+                variant="outline"
+                className="border-gaming-purple/50 text-gaming-purple hover:bg-gaming-purple/20 hover:text-white"
+              >
+                Back to Dashboard
+              </Button>
+            </div>
           </div>
+
+          {showAddForm && (
+            <div className="gamer-card p-6 mb-8">
+              <div className="flex justify-between items-center mb-4">
+                <h2 className="text-xl font-bold">Add Player to Leaderboard</h2>
+                <Button variant="outline" onClick={() => setShowAddForm(false)}>Cancel</Button>
+              </div>
+              <form onSubmit={handleAddPlayer} className="space-y-4">
+                <div>
+                  <label className="block text-sm font-medium mb-1">Player Profile</label>
+                  <select
+                    className="w-full bg-gaming-dark border border-white/10 rounded-md py-2 px-3 text-white"
+                    value={addForm.profile_id}
+                    onChange={e => setAddForm({ ...addForm, profile_id: e.target.value })}
+                    required
+                  >
+                    <option value="">Select Player</option>
+                    {profiles.map(profile => (
+                      <option key={profile.id} value={profile.id}>
+                        {profile.username || profile.full_name || profile.id}
+                      </option>
+                    ))}
+                  </select>
+                </div>
+                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-4">
+                  <div>
+                    <label className="block text-sm font-medium mb-1">Total Matches</label>
+                    <Input type="number" min="0" value={addForm.total_matches} onChange={e => setAddForm({ ...addForm, total_matches: parseInt(e.target.value) || 0 })} required />
+                  </div>
+                  <div>
+                    <label className="block text-sm font-medium mb-1">Wins</label>
+                    <Input type="number" min="0" value={addForm.wins} onChange={e => setAddForm({ ...addForm, wins: parseInt(e.target.value) || 0 })} required />
+                  </div>
+                  <div>
+                    <label className="block text-sm font-medium mb-1">Kills</label>
+                    <Input type="number" min="0" value={addForm.kills} onChange={e => setAddForm({ ...addForm, kills: parseInt(e.target.value) || 0 })} required />
+                  </div>
+                  <div>
+                    <label className="block text-sm font-medium mb-1">Deaths</label>
+                    <Input type="number" min="0" value={addForm.deaths} onChange={e => setAddForm({ ...addForm, deaths: parseInt(e.target.value) || 0 })} required />
+                  </div>
+                  <div>
+                    <label className="block text-sm font-medium mb-1">Assists</label>
+                    <Input type="number" min="0" value={addForm.assists} onChange={e => setAddForm({ ...addForm, assists: parseInt(e.target.value) || 0 })} required />
+                  </div>
+                </div>
+                <Button type="submit" className="bg-gaming-purple hover:bg-gaming-purple-bright">Add Player</Button>
+              </form>
+            </div>
+          )}
 
           {editingPlayer ? (
             <div className="gamer-card p-6 mb-8">

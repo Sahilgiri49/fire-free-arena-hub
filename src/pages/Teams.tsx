@@ -1,10 +1,10 @@
-
-import React from "react";
+import React, { useState, useEffect } from "react";
 import Navbar from "@/components/Navbar";
 import Footer from "@/components/Footer";
 import { Button } from "@/components/ui/button";
 import { Search, Users, Trophy, ArrowRight } from "lucide-react";
 import { cn } from "@/lib/utils";
+import { supabase } from "@/integrations/supabase/client";
 
 interface TeamCardProps {
   name: string;
@@ -68,72 +68,21 @@ const TeamCard = ({ name, logo, players, wins, rank, region }: TeamCardProps) =>
 };
 
 const Teams = () => {
-  const teams = [
-    {
-      name: "Neon Strikers",
-      logo: "https://images.unsplash.com/photo-1526374965328-7f61d4dc18c5?w=100&h=100&fit=crop",
-      players: 4,
-      wins: 32,
-      rank: 1,
-      region: "Delhi, India"
-    },
-    {
-      name: "Phoenix Squad",
-      logo: "https://images.unsplash.com/photo-1605810230434-7631ac76ec81?w=100&h=100&fit=crop",
-      players: 4,
-      wins: 28,
-      rank: 2,
-      region: "Mumbai, India"
-    },
-    {
-      name: "Team Inferno",
-      logo: "https://images.unsplash.com/photo-1487058792275-0ad4aaf24ca7?w=100&h=100&fit=crop",
-      players: 4,
-      wins: 25,
-      rank: 3,
-      region: "Bangalore, India"
-    },
-    {
-      name: "Ghost Hunters",
-      logo: "https://images.unsplash.com/photo-1470071459604-3b5ec3a7fe05?w=100&h=100&fit=crop",
-      players: 4,
-      wins: 21,
-      rank: 4,
-      region: "Chennai, India"
-    },
-    {
-      name: "Elite Warriors",
-      logo: "https://images.unsplash.com/photo-1526374965328-7f61d4dc18c5?w=100&h=100&fit=crop",
-      players: 4,
-      wins: 19,
-      rank: 5,
-      region: "Hyderabad, India"
-    },
-    {
-      name: "Dragon Slayers",
-      logo: "https://images.unsplash.com/photo-1605810230434-7631ac76ec81?w=100&h=100&fit=crop",
-      players: 4,
-      wins: 18,
-      rank: 6,
-      region: "Kolkata, India"
-    },
-    {
-      name: "Shadow Wolves",
-      logo: "https://images.unsplash.com/photo-1487058792275-0ad4aaf24ca7?w=100&h=100&fit=crop",
-      players: 4,
-      wins: 17,
-      rank: 7,
-      region: "Pune, India"
-    },
-    {
-      name: "Nova Esports",
-      logo: "https://images.unsplash.com/photo-1470071459604-3b5ec3a7fe05?w=100&h=100&fit=crop",
-      players: 4,
-      wins: 15,
-      rank: 8,
-      region: "Ahmedabad, India"
-    },
-  ];
+  const [teams, setTeams] = useState<any[]>([]);
+  const [isLoading, setIsLoading] = useState(true);
+
+  useEffect(() => {
+    const fetchTeams = async () => {
+      setIsLoading(true);
+      const { data, error } = await supabase
+        .from('teams')
+        .select('*')
+        .order('created_at', { ascending: false });
+      if (!error) setTeams(data || []);
+      setIsLoading(false);
+    };
+    fetchTeams();
+  }, []);
 
   return (
     <div className="min-h-screen flex flex-col">
@@ -159,28 +108,40 @@ const Teams = () => {
                     className="w-full bg-gaming-dark/50 border border-white/10 rounded-md py-2 px-10 text-white focus:outline-none focus:ring-2 focus:ring-gaming-purple/50"
                   />
                 </div>
-                <div className="flex gap-4">
-                  <select className="bg-gaming-dark/50 border border-white/10 rounded-md py-2 px-4 text-white focus:outline-none focus:ring-2 focus:ring-gaming-purple/50">
-                    <option value="">All Regions</option>
-                    <option value="North">North India</option>
-                    <option value="South">South India</option>
-                    <option value="East">East India</option>
-                    <option value="West">West India</option>
-                  </select>
-                  <select className="bg-gaming-dark/50 border border-white/10 rounded-md py-2 px-4 text-white focus:outline-none focus:ring-2 focus:ring-gaming-purple/50">
-                    <option value="rank">Sort by Rank</option>
-                    <option value="name">Sort by Name</option>
-                    <option value="wins">Sort by Wins</option>
-                  </select>
-                </div>
+                <select className="bg-gaming-dark/50 border border-white/10 rounded-md py-2 px-4 text-white focus:outline-none focus:ring-2 focus:ring-gaming-purple/50">
+                  <option value="">All Regions</option>
+                  <option value="North">North India</option>
+                  <option value="South">South India</option>
+                  <option value="East">East India</option>
+                  <option value="West">West India</option>
+                </select>
+                <select className="bg-gaming-dark/50 border border-white/10 rounded-md py-2 px-4 text-white focus:outline-none focus:ring-2 focus:ring-gaming-purple/50">
+                  <option value="rank">Sort by Rank</option>
+                  <option value="name">Sort by Name</option>
+                  <option value="wins">Sort by Wins</option>
+                </select>
               </div>
             </div>
           </div>
 
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-            {teams.map((team, index) => (
-              <TeamCard key={index} {...team} />
-            ))}
+            {isLoading ? (
+              <div className="col-span-full flex justify-center items-center py-12">
+                <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-gaming-purple"></div>
+              </div>
+            ) : (
+              teams.map((team, index) => (
+                <TeamCard
+                  key={team.id}
+                  name={team.name}
+                  logo={team.logo_url}
+                  players={1} // Placeholder, can be replaced with real count
+                  wins={0}    // Placeholder, can be replaced with real wins
+                  rank={index + 1}
+                  region={team.region}
+                />
+              ))
+            )}
           </div>
           
           <div className="mt-12 text-center">
