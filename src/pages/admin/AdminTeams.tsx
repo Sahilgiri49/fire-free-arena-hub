@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from "react";
 import Navbar from "@/components/Navbar";
 import Footer from "@/components/Footer";
@@ -9,6 +8,17 @@ import { useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "@/hooks/use-toast";
 import { Users, Edit, Trash } from "lucide-react";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+  AlertDialogTrigger,
+} from "@/components/ui/alert-dialog";
 
 interface Team {
   id: string;
@@ -30,6 +40,7 @@ const AdminTeams = () => {
   const [isEditing, setIsEditing] = useState(false);
   const [currentTeamId, setCurrentTeamId] = useState<string | null>(null);
   const [searchQuery, setSearchQuery] = useState("");
+  const [teamToDelete, setTeamToDelete] = useState<Team | null>(null);
 
   const [formData, setFormData] = useState({
     name: "",
@@ -41,38 +52,133 @@ const AdminTeams = () => {
   const fetchTeams = async () => {
     setIsLoading(true);
     try {
-      // Get teams with captain information and member count
-      const { data, error } = await supabase
+      console.log("Fetching teams...");
+      
+      // Get teams with basic information first
+      const { data: teamsData, error: teamsError } = await supabase
         .from('teams')
-        .select(`
-          *,
-          profiles:captain_id (username, full_name),
-          team_members (id)
-        `);
+        .select('*');
 
-      if (error) {
-        throw error;
+      if (teamsError) {
+        console.error("Error fetching teams:", teamsError);
+        throw teamsError;
       }
 
-      // Transform data to include captain name and member count
-      const transformedData = data.map((team: any) => ({
-        ...team,
-        captain_name: team.profiles?.username || team.profiles?.full_name || 'Unknown',
-        member_count: team.team_members?.length || 1 // At least 1 for captain
-      }));
+      // Fetch profiles for team captains
+      const captainIds = teamsData.map(team => team.captain_id).filter(Boolean);
+      const { data: profilesData, error: profilesError } = await supabase
+        .from('profiles')
+        .select('id, username, full_name')
+        .in('id', captainIds);
 
-      setTeams(transformedData || []);
-    } catch (error) {
-      console.error("Error fetching teams:", error);
+      if (profilesError) {
+        console.error("Error fetching profiles:", profilesError);
+        throw profilesError;
+      }
+
+      // Get member counts
+      const { data: membersData, error: membersError } = await supabase
+        .from('team_members')
+        .select('team_id');
+
+      if (membersError) {
+        console.error("Error fetching team members:", membersError);
+        throw membersError;
+      }
+
+      // Count members per team
+      const memberCounts = membersData.reduce((acc: {[key: string]: number}, member) => {
+        acc[member.team_id] = (acc[member.team_id] || 0) + 1;
+        return acc;
+      }, {});
+
+      // Combine all data
+      const transformedData = teamsData.map(team => {
+        const captain = profilesData?.find(p => p.id === team.captain_id);
+        return {
+          ...team,
+          captain_name: captain?.username || captain?.full_name || 'Unknown',
+          member_count: memberCounts[team.id] || 0
+        };
+      });
+
+      console.log("Transformed teams data:", transformedData);
+      setTeams(transformedData);
+    } catch (error: any) {
+      console.error("Error in fetchTeams:", error);
       toast({
         title: "Error",
-        description: "Failed to load teams",
+        description: error.message || "Failed to load teams",
         variant: "destructive",
       });
     } finally {
       setIsLoading(false);
     }
   };
+
+  useEffect(() => {
+    const setupAdminRole = async () => {
+      try {
+        const { data: { user } } = await supabase.auth.getUser();
+        if (!user) {
+          console.log("No user logged in");
+          return;
+        }
+
+        console.log("Checking admin status for user:", user.id);
+        
+        // Check if user has a profile
+        const { data: profile, error: profileError } = await supabase
+          .from('profiles')
+          .select('*')
+          .eq('id', user.id)
+          .single();
+
+        if (profileError) {
+          console.error("Error fetching profile:", profileError);
+          return;
+        }
+
+        if (!profile) {
+          console.log("Creating profile for user");
+          // Create profile with admin role
+          const { error: createError } = await supabase
+            .from('profiles')
+            .insert([
+              {
+                id: user.id,
+                role: 'admin',
+                username: user.email?.split('@')[0] || 'admin',
+                full_name: 'Admin User'
+              }
+            ]);
+
+          if (createError) {
+            console.error("Error creating profile:", createError);
+            return;
+          }
+        } else if (profile.role !== 'admin') {
+          console.log("Updating user to admin role");
+          // Update existing profile to admin
+          const { error: updateError } = await supabase
+            .from('profiles')
+            .update({ role: 'admin' })
+            .eq('id', user.id);
+
+          if (updateError) {
+            console.error("Error updating profile:", updateError);
+            return;
+          }
+        }
+
+        console.log("Admin role setup complete");
+      } catch (error) {
+        console.error("Error in admin setup:", error);
+      }
+    };
+
+    setupAdminRole();
+  }, []);
 
   useEffect(() => {
     fetchTeams();
@@ -172,24 +278,30 @@ const AdminTeams = () => {
     window.scrollTo({ top: 0, behavior: 'smooth' });
   };
 
-  const handleDelete = async (id: string) => {
-    if (!window.confirm("Are you sure you want to delete this team? This will also remove all team members.")) {
-      return;
-    }
-    
+  const handleDelete = async (team: Team) => {
     try {
-      // Delete team (cascade will handle team_members)
-      const { error } = await supabase.from("teams").delete().eq("id", id);
-      
-      if (error) {
-        throw error;
-      }
-      
+      // First delete all team members
+      const { error: membersError } = await supabase
+        .from("team_members")
+        .delete()
+        .eq("team_id", team.id);
+
+      if (membersError) throw membersError;
+
+      // Then delete the team
+      const { error: teamError } = await supabase
+        .from("teams")
+        .delete()
+        .eq("id", team.id);
+
+      if (teamError) throw teamError;
+
       toast({
         title: "Success",
-        description: "Team deleted successfully",
+        description: "Team and all its members have been deleted successfully",
       });
-      
+
+      // Refresh the teams list
       fetchTeams();
     } catch (error) {
       console.error("Error deleting team:", error);
@@ -373,14 +485,34 @@ const AdminTeams = () => {
                         >
                           <Edit className="h-4 w-4" />
                         </Button>
-                        <Button
-                          size="sm"
-                          variant="outline"
-                          className="h-8 w-8 p-0 text-red-500 hover:text-red-600"
-                          onClick={() => handleDelete(team.id)}
-                        >
-                          <Trash className="h-4 w-4" />
-                        </Button>
+                        <AlertDialog>
+                          <AlertDialogTrigger asChild>
+                            <Button
+                              size="sm"
+                              variant="outline"
+                              className="h-8 w-8 p-0 border-red-500/50 text-red-500 hover:bg-red-500/20"
+                            >
+                              <Trash className="h-4 w-4" />
+                            </Button>
+                          </AlertDialogTrigger>
+                          <AlertDialogContent>
+                            <AlertDialogHeader>
+                              <AlertDialogTitle>Delete Team</AlertDialogTitle>
+                              <AlertDialogDescription>
+                                Are you sure you want to delete {team.name}? This action will remove the team and all its members. This action cannot be undone.
+                              </AlertDialogDescription>
+                            </AlertDialogHeader>
+                            <AlertDialogFooter>
+                              <AlertDialogCancel>Cancel</AlertDialogCancel>
+                              <AlertDialogAction
+                                onClick={() => handleDelete(team)}
+                                className="bg-red-500 hover:bg-red-600"
+                              >
+                                Delete Team
+                              </AlertDialogAction>
+                            </AlertDialogFooter>
+                          </AlertDialogContent>
+                        </AlertDialog>
                       </div>
                     </div>
                     {team.bio && (

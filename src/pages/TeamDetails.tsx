@@ -6,7 +6,17 @@ import { toast } from "@/hooks/use-toast";
 import Navbar from "@/components/Navbar";
 import Footer from "@/components/Footer";
 import { Button } from "@/components/ui/button";
-import { Users, Trophy, Copy, Shield } from "lucide-react";
+import { Users, Trophy, Copy, Shield, Trash } from "lucide-react";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
 
 interface TeamMember {
   id: string;
@@ -39,6 +49,36 @@ const TeamDetails = () => {
   const [members, setMembers] = useState<TeamMember[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [isCaptain, setIsCaptain] = useState(false);
+  const [isAdmin, setIsAdmin] = useState(false);
+  const [showDeleteDialog, setShowDeleteDialog] = useState(false);
+
+  useEffect(() => {
+    const checkAdminStatus = async () => {
+      if (!user) {
+        console.log("No user logged in");
+        return;
+      }
+      
+      console.log("Checking admin status for user:", user.id);
+      const { data, error } = await supabase
+        .from('profiles')
+        .select('role')
+        .eq('id', user.id)
+        .single();
+      
+      if (error) {
+        console.error("Error checking admin status:", error);
+        return;
+      }
+      
+      console.log("User role data:", data);
+      const isUserAdmin = data?.role === 'admin';
+      console.log("Is user admin?", isUserAdmin);
+      setIsAdmin(isUserAdmin);
+    };
+
+    checkAdminStatus();
+  }, [user]);
 
   useEffect(() => {
     const fetchTeamDetails = async () => {
@@ -126,6 +166,44 @@ const TeamDetails = () => {
     }
   };
 
+  const handleDeleteTeam = async () => {
+    if (!team || !isAdmin) return;
+    
+    try {
+      // First delete all team members
+      const { error: membersError } = await supabase
+        .from("team_members")
+        .delete()
+        .eq("team_id", team.id);
+
+      if (membersError) throw membersError;
+
+      // Then delete the team
+      const { error: teamError } = await supabase
+        .from("teams")
+        .delete()
+        .eq("id", team.id);
+
+      if (teamError) throw teamError;
+
+      toast({
+        title: "Success",
+        description: "Team and all its members have been deleted successfully",
+      });
+
+      navigate("/teams");
+    } catch (error) {
+      console.error("Error deleting team:", error);
+      toast({
+        title: "Error",
+        description: "Failed to delete team. Please try again.",
+        variant: "destructive",
+      });
+    } finally {
+      setShowDeleteDialog(false);
+    }
+  };
+
   if (isLoading) {
     return (
       <div className="min-h-screen flex flex-col">
@@ -155,6 +233,24 @@ const TeamDetails = () => {
     <div className="min-h-screen flex flex-col">
       <Navbar />
       <main className="flex-grow container mx-auto px-4 py-12">
+        {/* Admin Controls Section */}
+        {isAdmin && (
+          <div className="mb-6 p-4 bg-red-500/10 border border-red-500/20 rounded-lg">
+            <h2 className="text-xl font-bold text-red-500 mb-2">Admin Controls</h2>
+            <div className="flex gap-4">
+              <Button
+                variant="destructive"
+                size="lg"
+                onClick={() => setShowDeleteDialog(true)}
+                className="bg-red-500 hover:bg-red-600"
+              >
+                <Trash className="h-5 w-5 mr-2" />
+                Delete Team
+              </Button>
+            </div>
+          </div>
+        )}
+
         {/* Team Header */}
         <div className="gamer-card p-8 mb-8">
           <div className="flex flex-col md:flex-row items-center gap-8">
@@ -164,7 +260,9 @@ const TeamDetails = () => {
               className="w-32 h-32 rounded-full object-cover"
             />
             <div className="flex-grow text-center md:text-left">
-              <h1 className="text-3xl font-bold text-gradient mb-2">{team.name}</h1>
+              <div className="flex items-center justify-between">
+                <h1 className="text-3xl font-bold text-gradient mb-2">{team.name}</h1>
+              </div>
               <p className="text-white/70 mb-4">{team.description}</p>
               <div className="flex flex-wrap gap-4 justify-center md:justify-start">
                 <div className="flex items-center gap-2">
@@ -229,6 +327,27 @@ const TeamDetails = () => {
             ))}
           </div>
         </div>
+
+        {/* Delete Confirmation Dialog */}
+        <AlertDialog open={showDeleteDialog} onOpenChange={setShowDeleteDialog}>
+          <AlertDialogContent>
+            <AlertDialogHeader>
+              <AlertDialogTitle>Delete Team</AlertDialogTitle>
+              <AlertDialogDescription>
+                Are you sure you want to delete {team?.name}? This action will remove the team and all its members. This action cannot be undone.
+              </AlertDialogDescription>
+            </AlertDialogHeader>
+            <AlertDialogFooter>
+              <AlertDialogCancel>Cancel</AlertDialogCancel>
+              <AlertDialogAction
+                onClick={handleDeleteTeam}
+                className="bg-red-500 hover:bg-red-600"
+              >
+                Delete Team
+              </AlertDialogAction>
+            </AlertDialogFooter>
+          </AlertDialogContent>
+        </AlertDialog>
       </main>
       <Footer />
     </div>
