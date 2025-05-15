@@ -1,123 +1,161 @@
 
 import React from "react";
 import { Button } from "@/components/ui/button";
-import { Calendar, Trophy, Users } from "lucide-react";
-import { cn } from "@/lib/utils";
+import { useNavigate } from "react-router-dom";
+import { useAuth } from "@/context/AuthContext";
+import { supabase } from "@/integrations/supabase/client";
+import { toast } from "@/hooks/use-toast";
+import { Tables } from "@/integrations/supabase/types";
+
+type Tournament = Tables<"tournaments">;
 
 interface TournamentCardProps {
-  title: string;
-  image: string;
-  date: string;
-  prizePool: string;
-  entryFee: string;
-  teamSize: string;
-  mode: "Online" | "Offline";
-  status: "Registration Open" | "In Progress" | "Completed";
-  registeredTeams: number;
-  maxTeams: number;
+  tournament: Tournament;
+  showViewButton?: boolean;
 }
 
-const TournamentCard = ({
-  title,
-  image,
-  date,
-  prizePool,
-  entryFee,
-  teamSize,
-  mode,
-  status,
-  registeredTeams,
-  maxTeams,
-}: TournamentCardProps) => {
+const TournamentCard: React.FC<TournamentCardProps> = ({ tournament, showViewButton = true }) => {
+  const navigate = useNavigate();
+  const { user } = useAuth();
+
+  const handleJoin = async (e: React.MouseEvent) => {
+    e.stopPropagation();
+    
+    if (!user) {
+      toast({
+        title: "Authentication Required",
+        description: "You need to sign in to join tournaments",
+        variant: "destructive",
+      });
+      navigate("/login");
+      return;
+    }
+    
+    try {
+      // Check if user is already registered
+      const { data: existingReg, error: checkError } = await supabase
+        .from("tournament_registrations")
+        .select("*")
+        .eq("tournament_id", tournament.id)
+        .eq("profile_id", user.id)
+        .single();
+      
+      if (existingReg) {
+        toast({
+          title: "Already Registered",
+          description: "You are already registered for this tournament",
+        });
+        return;
+      }
+      
+      // Register the user
+      const { error: regError } = await supabase
+        .from("tournament_registrations")
+        .insert([
+          {
+            profile_id: user.id,
+            tournament_id: tournament.id,
+            payment_status: tournament.entry_fee ? "Pending" : "Free",
+          }
+        ]);
+      
+      if (regError) {
+        throw regError;
+      }
+      
+      toast({
+        title: "Registration Successful",
+        description: tournament.entry_fee 
+          ? "You've been registered! Please complete payment." 
+          : "You've been registered for this tournament!",
+      });
+      
+    } catch (error) {
+      console.error("Registration error:", error);
+      toast({
+        title: "Registration Failed",
+        description: "Something went wrong. Please try again.",
+        variant: "destructive",
+      });
+    }
+  };
+
+  const viewTournament = () => {
+    // For now just show a toast since tournament detail page isn't implemented yet
+    toast({
+      title: tournament.title,
+      description: "Viewing tournament details",
+    });
+  };
+
+  // Format the date to be more readable
+  const formatDate = (dateString: string) => {
+    const options: Intl.DateTimeFormatOptions = {
+      year: 'numeric',
+      month: 'short',
+      day: 'numeric',
+    };
+    return new Date(dateString).toLocaleDateString(undefined, options);
+  };
+
   return (
-    <div className="gamer-card overflow-hidden group">
-      {/* Tournament Image */}
-      <div className="relative">
-        <img
-          src={image}
-          alt={title}
-          className="w-full h-48 object-cover transition-transform duration-500 group-hover:scale-105"
-        />
-        <div className="absolute inset-0 bg-gradient-to-t from-gaming-dark-purple/90 via-transparent to-transparent" />
-        
-        {/* Status Badge */}
-        <div 
-          className={cn(
-            "absolute top-3 right-3 rounded-full px-3 py-1 text-xs font-medium",
-            status === "Registration Open" && "bg-green-500/80 text-white",
-            status === "In Progress" && "bg-gaming-orange/80 text-white",
-            status === "Completed" && "bg-gray-500/80 text-white",
-          )}
-        >
-          {status}
-        </div>
-        
-        {/* Mode Badge */}
-        <div 
-          className={cn(
-            "absolute top-3 left-3 rounded-full px-3 py-1 text-xs font-medium",
-            mode === "Online" && "bg-gaming-purple/80 text-white",
-            mode === "Offline" && "bg-gaming-blue/80 text-white",
-          )}
-        >
-          {mode}
+    <div className="gamer-card h-full flex flex-col cursor-pointer transform hover:scale-[1.01] transition-all duration-200" onClick={viewTournament}>
+      <div
+        className="h-40 bg-cover bg-center rounded-t-lg relative"
+        style={{
+          backgroundImage: tournament.image_url
+            ? `url(${tournament.image_url})`
+            : "url('https://images.unsplash.com/photo-1542751371-adc38448a05e?q=80&w=1770&auto=format&fit=crop&ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D')",
+        }}
+      >
+        <div className="absolute inset-0 bg-gradient-to-t from-black/80 to-transparent"></div>
+        <div className="absolute bottom-2 left-3">
+          <span className="px-2 py-1 text-xs rounded bg-gaming-purple text-white">
+            {tournament.team_size}
+          </span>
+          <span className="ml-2 px-2 py-1 text-xs rounded bg-gaming-purple/70 text-white">
+            {tournament.mode}
+          </span>
         </div>
       </div>
-      
-      {/* Tournament Content */}
-      <div className="p-5">
-        <h3 className="text-xl font-bold text-white mb-2">{title}</h3>
-        
-        <div className="space-y-3 mb-4">
-          {/* Date */}
-          <div className="flex items-center text-sm text-white/70">
-            <Calendar className="h-4 w-4 mr-2 text-gaming-purple" />
-            <span>{date}</span>
-          </div>
-          
-          {/* Team Size */}
-          <div className="flex items-center text-sm text-white/70">
-            <Users className="h-4 w-4 mr-2 text-gaming-purple" />
-            <span>{teamSize}</span>
-          </div>
-          
-          {/* Prize Pool */}
-          <div className="flex items-center text-sm text-white/70">
-            <Trophy className="h-4 w-4 mr-2 text-gaming-orange" />
-            <span>{prizePool}</span>
-          </div>
-        </div>
-        
-        {/* Registration Progress */}
-        <div className="mb-4">
-          <div className="flex justify-between text-xs mb-1">
-            <span className="text-white/70">Registration</span>
-            <span className="text-white/90">
-              {registeredTeams}/{maxTeams} Teams
+      <div className="p-4 flex-grow flex flex-col">
+        <h3 className="text-lg font-bold mb-1">{tournament.title}</h3>
+        <p className="text-sm text-white/70 mb-2">{tournament.description}</p>
+
+        <div className="mt-auto space-y-2">
+          <div className="flex justify-between text-sm">
+            <span className="text-white/70">Prize Pool:</span>
+            <span className="text-gaming-purple font-semibold">
+              {tournament.prize_pool || "TBA"}
             </span>
           </div>
-          <div className="w-full h-2 bg-gray-700 rounded-full overflow-hidden">
-            <div 
-              className="h-full bg-gradient-to-r from-gaming-purple to-gaming-purple-bright rounded-full"
-              style={{ width: `${(registeredTeams / maxTeams) * 100}%` }}
-            />
-          </div>
-        </div>
-        
-        {/* Registration Details */}
-        <div className="flex justify-between items-center mb-4">
-          <div className="text-xs text-white/70">
-            Entry Fee
-            <span className="block text-sm font-medium text-white">
-              {entryFee}
+          <div className="flex justify-between text-sm">
+            <span className="text-white/70">Entry Fee:</span>
+            <span>
+              {tournament.entry_fee || "Free"}
             </span>
           </div>
-          <Button 
-            size="sm" 
-            className="bg-gaming-purple hover:bg-gaming-purple-bright text-white"
-          >
-            Register
-          </Button>
+          <div className="flex justify-between text-sm">
+            <span className="text-white/70">Start Date:</span>
+            <span>
+              {formatDate(tournament.start_date)}
+            </span>
+          </div>
+
+          <div className="flex justify-between mt-4">
+            {showViewButton && (
+              <Button variant="outline" size="sm" className="flex-1 mr-2">
+                View Details
+              </Button>
+            )}
+            <Button 
+              className="flex-1 bg-gaming-purple hover:bg-gaming-purple-bright"
+              size="sm"
+              onClick={handleJoin}
+            >
+              Join Now
+            </Button>
+          </div>
         </div>
       </div>
     </div>

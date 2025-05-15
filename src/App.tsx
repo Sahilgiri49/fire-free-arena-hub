@@ -19,6 +19,10 @@ import Profile from "./pages/Profile";
 import AdminDashboard from "./pages/admin/AdminDashboard";
 import AdminTournaments from "./pages/admin/AdminTournaments";
 import AdminLeaderboard from "./pages/admin/AdminLeaderboard";
+import AdminTeams from "./pages/admin/AdminTeams";
+import AdminSchedule from "./pages/admin/AdminSchedule";
+import AdminNews from "./pages/admin/AdminNews";
+import AdminStreams from "./pages/admin/AdminStreams";
 
 // Create a new QueryClient instance outside the component
 const queryClient = new QueryClient();
@@ -53,9 +57,29 @@ const App = () => (
                 <AdminTournaments />
               </ProtectedRoute>
             } />
+            <Route path="/admin/teams" element={
+              <ProtectedRoute adminOnly={true}>
+                <AdminTeams />
+              </ProtectedRoute>
+            } />
+            <Route path="/admin/schedule" element={
+              <ProtectedRoute adminOnly={true}>
+                <AdminSchedule />
+              </ProtectedRoute>
+            } />
             <Route path="/admin/leaderboard" element={
               <ProtectedRoute adminOnly={true}>
                 <AdminLeaderboard />
+              </ProtectedRoute>
+            } />
+            <Route path="/admin/news" element={
+              <ProtectedRoute adminOnly={true}>
+                <AdminNews />
+              </ProtectedRoute>
+            } />
+            <Route path="/admin/streams" element={
+              <ProtectedRoute adminOnly={true}>
+                <AdminStreams />
               </ProtectedRoute>
             } />
             <Route path="*" element={<NotFound />} />
