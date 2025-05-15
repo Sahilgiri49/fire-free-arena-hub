@@ -166,6 +166,28 @@ const AdminTournaments = () => {
         return;
       }
       
+      // Validate dates
+      if (!formData.startDate) {
+        toast({
+          title: "Error",
+          description: "Start date is required",
+          variant: "destructive",
+        });
+        setIsLoading(false);
+        return;
+      }
+      
+      // Validate registration deadline
+      if (!formData.registrationDeadline) {
+        toast({
+          title: "Error",
+          description: "Registration deadline is required",
+          variant: "destructive",
+        });
+        setIsLoading(false);
+        return;
+      }
+
       const tournamentData = {
         title: formData.title,
         description: formData.description,
@@ -176,11 +198,11 @@ const AdminTournaments = () => {
         entry_fee: formData.entryFee,
         max_teams: formData.maxTeams,
         team_size: formData.teamSize,
-        mode: formData.mode,
+        mode: formData.mode as "Online" | "Offline" | "Hybrid", // Fix type issue
         image_url: formData.imageUrl || null,
         rules: formData.rules || null,
         creator_id: user.id,
-        status: "Registration Open",
+        status: "Registration Open" as "Registration Open" | "Ongoing" | "Completed", // Fix type issue
       };
       
       let result;
@@ -211,11 +233,11 @@ const AdminTournaments = () => {
       
       resetForm();
       fetchTournaments();
-    } catch (error) {
+    } catch (error: any) {
       console.error("Error creating/updating tournament:", error);
       toast({
         title: "Error",
-        description: "Failed to save tournament. Please try again.",
+        description: error?.message || "Failed to save tournament. Please try again.",
         variant: "destructive",
       });
     } finally {
@@ -283,6 +305,7 @@ const AdminTournaments = () => {
                       value={formData.startDate}
                       onChange={handleChange}
                       required
+                      className="pointer-events-auto"
                     />
                   </div>
                   
@@ -293,6 +316,7 @@ const AdminTournaments = () => {
                       name="endDate"
                       value={formData.endDate}
                       onChange={handleChange}
+                      className="pointer-events-auto"
                     />
                   </div>
                   
@@ -304,6 +328,7 @@ const AdminTournaments = () => {
                       value={formData.registrationDeadline}
                       onChange={handleChange}
                       required
+                      className="pointer-events-auto"
                     />
                   </div>
                 </div>
@@ -348,7 +373,7 @@ const AdminTournaments = () => {
                       name="teamSize"
                       value={formData.teamSize}
                       onChange={handleChange}
-                      className="w-full rounded-md border border-input bg-background px-3 py-2 text-base"
+                      className="w-full rounded-md border border-input bg-background px-3 py-2 text-base pointer-events-auto"
                       required
                     >
                       <option value="Solo">Solo</option>
@@ -363,7 +388,7 @@ const AdminTournaments = () => {
                       name="mode"
                       value={formData.mode}
                       onChange={handleChange}
-                      className="w-full rounded-md border border-input bg-background px-3 py-2 text-base"
+                      className="w-full rounded-md border border-input bg-background px-3 py-2 text-base pointer-events-auto"
                       required
                     >
                       <option value="Online">Online</option>

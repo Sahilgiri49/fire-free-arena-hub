@@ -61,13 +61,15 @@ const TournamentCard: React.FC<TournamentCardProps> = (props) => {
     creator_id: "",
     registration_deadline: new Date().toISOString(),
     created_at: new Date().toISOString(),
-    updated_at: new Date().toISOString()
+    updated_at: new Date().toISOString(),
+    end_date: null
   };
 
   const showViewButton = props.showViewButton ?? true;
 
   const handleJoin = async (e: React.MouseEvent) => {
     e.stopPropagation();
+    e.preventDefault();
     
     if (!user) {
       toast({
@@ -79,16 +81,25 @@ const TournamentCard: React.FC<TournamentCardProps> = (props) => {
       return;
     }
     
+    if (!tournament.id) {
+      toast({
+        title: "Error",
+        description: "Cannot join mock tournament. Please view real tournaments.",
+        variant: "destructive",
+      });
+      navigate("/tournaments");
+      return;
+    }
+    
     try {
       // Check if user is already registered
       const { data: existingReg, error: checkError } = await supabase
         .from("tournament_registrations")
         .select("*")
         .eq("tournament_id", tournament.id)
-        .eq("profile_id", user.id)
-        .single();
+        .eq("profile_id", user.id);
       
-      if (existingReg) {
+      if (existingReg && existingReg.length > 0) {
         toast({
           title: "Already Registered",
           description: "You are already registered for this tournament",
@@ -118,6 +129,9 @@ const TournamentCard: React.FC<TournamentCardProps> = (props) => {
           : "You've been registered for this tournament!",
       });
       
+      // Navigate to tournament details
+      navigate(`/tournaments/${tournament.id}`);
+      
     } catch (error) {
       console.error("Registration error:", error);
       toast({
@@ -129,8 +143,13 @@ const TournamentCard: React.FC<TournamentCardProps> = (props) => {
   };
 
   const viewTournament = () => {
-    // Navigate to tournament details page
-    navigate(`/tournaments/${tournament.id}`);
+    // Navigate to tournament details page if it has a real ID
+    if (tournament.id) {
+      navigate(`/tournaments/${tournament.id}`);
+    } else {
+      // This is a mock tournament, redirect to tournaments page
+      navigate("/tournaments");
+    }
   };
 
   // Format the date to be more readable
@@ -167,7 +186,7 @@ const TournamentCard: React.FC<TournamentCardProps> = (props) => {
       </div>
       <div className="p-4 flex-grow flex flex-col">
         <h3 className="text-lg font-bold mb-1">{tournament.title}</h3>
-        <p className="text-sm text-white/70 mb-2">{tournament.description}</p>
+        <p className="text-sm text-white/70 mb-2">{tournament.description?.substring(0, 60) || ''}{tournament.description?.length > 60 ? '...' : ''}</p>
 
         <div className="mt-auto space-y-2">
           <div className="flex justify-between text-sm">
@@ -191,10 +210,15 @@ const TournamentCard: React.FC<TournamentCardProps> = (props) => {
 
           <div className="flex justify-between mt-4">
             {showViewButton && (
-              <Button variant="outline" size="sm" className="flex-1 mr-2" onClick={(e) => {
-                e.stopPropagation();
-                viewTournament();
-              }}>
+              <Button 
+                variant="outline" 
+                size="sm" 
+                className="flex-1 mr-2 border-gaming-purple/50 text-gaming-purple hover:bg-gaming-purple/20 hover:text-white" 
+                onClick={(e) => {
+                  e.stopPropagation();
+                  viewTournament();
+                }}
+              >
                 View Details
               </Button>
             )}

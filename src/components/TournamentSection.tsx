@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from "react";
 import { ArrowRight } from "lucide-react";
 import { Button } from "@/components/ui/button";
@@ -5,6 +6,7 @@ import TournamentCard from "@/components/TournamentCard";
 import { supabase } from "@/integrations/supabase/client";
 import { Tables } from "@/integrations/supabase/types";
 import { useNavigate } from "react-router-dom";
+import { toast } from "@/hooks/use-toast";
 
 const TournamentSection = () => {
   const navigate = useNavigate();
@@ -27,6 +29,11 @@ const TournamentSection = () => {
         setTournaments(data || []);
       } catch (error) {
         console.error("Error fetching tournaments:", error);
+        toast({
+          title: "Error",
+          description: "Failed to load tournaments",
+          variant: "destructive",
+        });
       } finally {
         setIsLoading(false);
       }
@@ -89,6 +96,10 @@ const TournamentSection = () => {
 
   const displayTournaments = tournaments.length > 0 ? tournaments : mockTournaments;
 
+  const handleViewAll = () => {
+    navigate("/tournaments");
+  };
+
   return (
     <div className="container mx-auto px-4 py-16">
       <div className="flex justify-between items-center mb-8">
@@ -103,7 +114,7 @@ const TournamentSection = () => {
         <Button
           variant="outline"
           className="border-gaming-purple/50 text-gaming-purple hover:bg-gaming-purple/20 hover:text-white"
-          onClick={() => navigate("/tournaments")}
+          onClick={handleViewAll}
         >
           View All
           <ArrowRight className="ml-2 h-4 w-4" />
@@ -116,30 +127,12 @@ const TournamentSection = () => {
         </div>
       ) : (
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-          {tournaments.length > 0 ? (
-            tournaments.map((tournament) => (
-              <TournamentCard 
-                key={tournament.id} 
-                tournament={tournament}
-              />
-            ))
-          ) : (
-            mockTournaments.map((tournament, index) => (
-              <TournamentCard 
-                key={index} 
-                title={tournament.title}
-                image={tournament.image}
-                date={tournament.date}
-                prizePool={tournament.prizePool}
-                entryFee={tournament.entryFee}
-                teamSize={tournament.teamSize}
-                mode={tournament.mode}
-                status={tournament.status}
-                registeredTeams={tournament.registeredTeams}
-                maxTeams={tournament.maxTeams}
-              />
-            ))
-          )}
+          {displayTournaments.map((tournament, index) => (
+            <TournamentCard 
+              key={tournament.id || index} 
+              tournament={tournament as Tables<"tournaments">}
+            />
+          ))}
         </div>
       )}
     </div>
