@@ -2,10 +2,10 @@
 import React from "react";
 import { ArrowRight } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import TournamentCard from "@/components/TournamentCard";
+import TournamentCard, { TournamentCardData } from "@/components/TournamentCard";
 
 const TournamentSection = () => {
-  const tournaments = [
+  const tournaments: TournamentCardData[] = [
     {
       title: "Free Fire Pro League Season 5",
       image: "https://images.unsplash.com/photo-1526374965328-7f61d4dc18c5",
@@ -13,8 +13,8 @@ const TournamentSection = () => {
       prizePool: "₹100,000",
       entryFee: "₹1,000",
       teamSize: "Squad (4 players)",
-      mode: "Online" as const,
-      status: "Registration Open" as const,
+      mode: "Online",
+      status: "Registration Open",
       registeredTeams: 64,
       maxTeams: 128,
     },
@@ -25,8 +25,8 @@ const TournamentSection = () => {
       prizePool: "₹50,000",
       entryFee: "₹500",
       teamSize: "Squad (4 players)",
-      mode: "Online" as const,
-      status: "Registration Open" as const,
+      mode: "Online",
+      status: "Registration Open",
       registeredTeams: 42,
       maxTeams: 64,
     },
@@ -37,8 +37,8 @@ const TournamentSection = () => {
       prizePool: "₹25,000",
       entryFee: "₹200",
       teamSize: "Solo",
-      mode: "Online" as const,
-      status: "Registration Open" as const,
+      mode: "Online",
+      status: "Registration Open",
       registeredTeams: 85,
       maxTeams: 100,
     },
@@ -49,8 +49,8 @@ const TournamentSection = () => {
       prizePool: "₹200,000",
       entryFee: "₹2,000",
       teamSize: "Squad (4 players)",
-      mode: "Offline" as const,
-      status: "Registration Open" as const,
+      mode: "Offline",
+      status: "Registration Open",
       registeredTeams: 12,
       maxTeams: 32,
     },
@@ -78,7 +78,19 @@ const TournamentSection = () => {
 
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
         {tournaments.map((tournament, index) => (
-          <TournamentCard key={index} {...tournament} />
+          <TournamentCard 
+            key={index} 
+            title={tournament.title}
+            image={tournament.image}
+            date={tournament.date}
+            prizePool={tournament.prizePool}
+            entryFee={tournament.entryFee}
+            teamSize={tournament.teamSize}
+            mode={tournament.mode}
+            status={tournament.status}
+            registeredTeams={tournament.registeredTeams}
+            maxTeams={tournament.maxTeams}
+          />
         ))}
       </div>
     </div>

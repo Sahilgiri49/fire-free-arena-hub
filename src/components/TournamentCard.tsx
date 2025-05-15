@@ -9,14 +9,61 @@ import { Tables } from "@/integrations/supabase/types";
 
 type Tournament = Tables<"tournaments">;
 
-interface TournamentCardProps {
-  tournament: Tournament;
-  showViewButton?: boolean;
+// Define alternative tournament shape for mock data
+export interface TournamentCardData {
+  title: string;
+  image?: string;
+  date: string;
+  prizePool: string;
+  entryFee: string;
+  teamSize: string;
+  mode: "Online" | "Offline" | "Hybrid";
+  status: "Registration Open" | "Ongoing" | "Completed";
+  registeredTeams?: number;
+  maxTeams: number;
+  image_url?: string;
 }
 
-const TournamentCard: React.FC<TournamentCardProps> = ({ tournament, showViewButton = true }) => {
+interface TournamentCardProps {
+  tournament?: Tournament;
+  showViewButton?: boolean;
+  // Accept legacy props format for backward compatibility
+  title?: string;
+  image?: string;
+  date?: string;
+  prizePool?: string;
+  entryFee?: string;
+  teamSize?: string;
+  mode?: "Online" | "Offline" | "Hybrid";
+  status?: "Registration Open" | "Ongoing" | "Completed";
+  registeredTeams?: number;
+  maxTeams?: number;
+}
+
+const TournamentCard: React.FC<TournamentCardProps> = (props) => {
   const navigate = useNavigate();
   const { user } = useAuth();
+
+  // Handle both prop formats (tournament object or individual props)
+  const tournament = props.tournament || {
+    id: "",
+    title: props.title || "",
+    image_url: props.image || "",
+    start_date: props.date ? new Date(props.date).toISOString() : new Date().toISOString(),
+    prize_pool: props.prizePool || "",
+    entry_fee: props.entryFee || "",
+    team_size: props.teamSize || "",
+    mode: props.mode || "Online",
+    status: props.status || "Registration Open",
+    max_teams: props.maxTeams || 0,
+    description: "",
+    creator_id: "",
+    registration_deadline: new Date().toISOString(),
+    created_at: new Date().toISOString(),
+    updated_at: new Date().toISOString()
+  };
+
+  const showViewButton = props.showViewButton ?? true;
 
   const handleJoin = async (e: React.MouseEvent) => {
     e.stopPropagation();
@@ -98,14 +145,15 @@ const TournamentCard: React.FC<TournamentCardProps> = ({ tournament, showViewBut
     return new Date(dateString).toLocaleDateString(undefined, options);
   };
 
+  const imageUrl = tournament.image_url || 
+    (props.image ? props.image : "https://images.unsplash.com/photo-1542751371-adc38448a05e?q=80&w=1770&auto=format&fit=crop&ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D");
+
   return (
     <div className="gamer-card h-full flex flex-col cursor-pointer transform hover:scale-[1.01] transition-all duration-200" onClick={viewTournament}>
       <div
         className="h-40 bg-cover bg-center rounded-t-lg relative"
         style={{
-          backgroundImage: tournament.image_url
-            ? `url(${tournament.image_url})`
-            : "url('https://images.unsplash.com/photo-1542751371-adc38448a05e?q=80&w=1770&auto=format&fit=crop&ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D')",
+          backgroundImage: `url(${imageUrl})`,
         }}
       >
         <div className="absolute inset-0 bg-gradient-to-t from-black/80 to-transparent"></div>

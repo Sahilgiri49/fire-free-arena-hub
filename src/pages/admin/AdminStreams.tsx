@@ -4,180 +4,134 @@ import Navbar from "@/components/Navbar";
 import Footer from "@/components/Footer";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { useNavigate } from "react-router-dom";
-import { supabase } from "@/integrations/supabase/client";
 import { toast } from "@/hooks/use-toast";
-import { Edit, Trash, Video } from "lucide-react";
+import { useNavigate } from "react-router-dom";
+import { useAuth } from "@/context/AuthContext";
 
-interface StreamData {
+// Define a mock stream type since there's no streams table in Supabase yet
+interface Stream {
   id: string;
   title: string;
+  description: string;
   stream_url: string;
-  thumbnail_url: string | null;
-  streamer_name: string;
+  thumbnail_url: string;
   is_live: boolean;
-  created_at: string;
+  scheduled_for: string;
 }
 
 const AdminStreams = () => {
+  const { user } = useAuth();
   const navigate = useNavigate();
-  const [streams, setStreams] = useState<StreamData[]>([]);
   const [isLoading, setIsLoading] = useState(true);
-  const [isCreating, setIsCreating] = useState(false);
-  const [isEditing, setIsEditing] = useState(false);
-  const [currentStreamId, setCurrentStreamId] = useState<string | null>(null);
-
-  const [formData, setFormData] = useState({
+  const [streams, setStreams] = useState<Stream[]>([]);
+  
+  // Form state
+  const [newStream, setNewStream] = useState({
     title: "",
-    streamUrl: "",
-    thumbnailUrl: "",
-    streamerName: "",
-    isLive: true
+    description: "",
+    stream_url: "",
+    thumbnail_url: "",
+    scheduled_for: "",
   });
 
-  // Create streams table if it doesn't exist
-  const createStreamsTableIfNeeded = async () => {
-    try {
-      // Check if the streams table exists
-      const { data, error } = await supabase
-        .from('streams')
-        .select('id')
-        .limit(1);
-      
-      if (error && error.code === '42P01') {
-        // Table doesn't exist, we need to create it
-        // In a real app, this should be done through proper migrations
-        console.log("Streams table doesn't exist. You may need to create it in the Supabase dashboard.");
+  useEffect(() => {
+    // Since there's no streams table, we'll use mock data
+    const fetchStreams = async () => {
+      try {
+        // In future, this would be replaced with a real Supabase query
+        // const { data, error } = await supabase.from("streams").select("*");
+        
+        // Mock data for now
+        const mockStreams: Stream[] = [
+          {
+            id: "1",
+            title: "Free Fire Tournament Finals",
+            description: "Watch the exciting finals of our monthly tournament",
+            stream_url: "https://www.youtube.com/embed/dQw4w9WgXcQ",
+            thumbnail_url: "https://images.unsplash.com/photo-1542751371-adc38448a05e",
+            is_live: true,
+            scheduled_for: new Date().toISOString(),
+          },
+          {
+            id: "2",
+            title: "Pro Player Showcase",
+            description: "Top players showing their skills",
+            stream_url: "https://www.youtube.com/embed/dQw4w9WgXcQ",
+            thumbnail_url: "https://images.unsplash.com/photo-1526374965328-7f61d4dc18c5",
+            is_live: false,
+            scheduled_for: new Date(Date.now() + 24 * 60 * 60 * 1000).toISOString(),
+          },
+        ];
+        
+        setStreams(mockStreams);
+      } catch (error) {
+        console.error("Error fetching streams:", error);
+        toast({
+          title: "Error",
+          description: "Failed to fetch streams",
+          variant: "destructive",
+        });
+      } finally {
+        setIsLoading(false);
       }
+    };
+
+    fetchStreams();
+  }, []);
+
+  const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
+    const { name, value } = e.target;
+    setNewStream(prev => ({ ...prev, [name]: value }));
+  };
+
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setIsLoading(true);
+    
+    try {
+      // Mock adding a stream - would be replaced with Supabase
+      // const { data, error } = await supabase.from("streams").insert([newStream]).select();
       
-      // For demo purposes, let's populate with mock data
-      setStreams([
-        {
-          id: '1',
-          title: 'Free Fire Championship Finals',
-          stream_url: 'https://www.youtube.com/embed/dQw4w9WgXcQ',
-          thumbnail_url: 'https://via.placeholder.com/320x180.png?text=Free+Fire+Stream',
-          streamer_name: 'OfficialFreeFire',
-          is_live: true,
-          created_at: new Date().toISOString()
-        },
-        {
-          id: '2',
-          title: 'Team Aura Practice Session',
-          stream_url: 'https://www.youtube.com/embed/dQw4w9WgXcQ',
-          thumbnail_url: 'https://via.placeholder.com/320x180.png?text=Team+Aura',
-          streamer_name: 'TeamAuraOfficial',
-          is_live: false,
-          created_at: new Date(Date.now() - 86400000).toISOString()
-        }
-      ]);
+      // Mock implementation
+      const newStreamWithId: Stream = {
+        ...newStream,
+        id: Date.now().toString(),
+        is_live: false,
+        scheduled_for: newStream.scheduled_for || new Date().toISOString(),
+      };
+      
+      setStreams(prev => [...prev, newStreamWithId]);
+      setNewStream({
+        title: "",
+        description: "",
+        stream_url: "",
+        thumbnail_url: "",
+        scheduled_for: "",
+      });
+      
+      toast({
+        title: "Success",
+        description: "Stream added successfully",
+      });
     } catch (error) {
-      console.error("Error checking for streams table:", error);
+      console.error("Error adding stream:", error);
+      toast({
+        title: "Error",
+        description: "Failed to add stream",
+        variant: "destructive",
+      });
     } finally {
       setIsLoading(false);
     }
   };
 
-  useEffect(() => {
-    createStreamsTableIfNeeded();
-  }, []);
-
-  const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>) => {
-    const { name, value, type } = e.target;
-    
-    if (type === 'checkbox') {
-      const checkbox = e.target as HTMLInputElement;
-      setFormData(prev => ({ ...prev, [name]: checkbox.checked }));
-    } else {
-      setFormData(prev => ({ ...prev, [name]: value }));
-    }
-  };
-
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
-    
+  const deleteStream = async (id: string) => {
     try {
-      // Mock the save operation since we don't have a real streams table yet
-      if (isEditing && currentStreamId) {
-        // Find and update the stream in our mock data
-        setStreams(prev => prev.map(stream => 
-          stream.id === currentStreamId ? {
-            ...stream,
-            title: formData.title,
-            stream_url: formData.streamUrl,
-            thumbnail_url: formData.thumbnailUrl,
-            streamer_name: formData.streamerName,
-            is_live: formData.isLive
-          } : stream
-        ));
-      } else {
-        // Add a new mock stream
-        setStreams(prev => [
-          {
-            id: String(Date.now()),
-            title: formData.title,
-            stream_url: formData.streamUrl,
-            thumbnail_url: formData.thumbnailUrl,
-            streamer_name: formData.streamerName,
-            is_live: formData.isLive,
-            created_at: new Date().toISOString()
-          },
-          ...prev
-        ]);
-      }
+      // This would be a Supabase delete in production
+      // await supabase.from("streams").delete().eq("id", id);
       
-      toast({
-        title: "Success",
-        description: isEditing ? "Stream updated successfully" : "Stream added successfully",
-      });
-      
-      setFormData({
-        title: "",
-        streamUrl: "",
-        thumbnailUrl: "",
-        streamerName: "",
-        isLive: true
-      });
-      
-      setIsCreating(false);
-      setIsEditing(false);
-      setCurrentStreamId(null);
-      
-    } catch (error) {
-      console.error("Error saving stream:", error);
-      toast({
-        title: "Error",
-        description: "Failed to save stream. Please try again.",
-        variant: "destructive",
-      });
-    }
-  };
-
-  const handleEdit = (stream: StreamData) => {
-    setFormData({
-      title: stream.title,
-      streamUrl: stream.stream_url,
-      thumbnailUrl: stream.thumbnail_url || "",
-      streamerName: stream.streamer_name,
-      isLive: stream.is_live
-    });
-    
-    setCurrentStreamId(stream.id);
-    setIsEditing(true);
-    setIsCreating(true);
-    
-    window.scrollTo({ top: 0, behavior: 'smooth' });
-  };
-
-  const handleDelete = (id: string) => {
-    if (!window.confirm("Are you sure you want to delete this stream?")) {
-      return;
-    }
-    
-    try {
-      // Remove from our mock data
-      setStreams(prev => prev.filter(stream => stream.id !== id));
-      
+      // Mock implementation
+      setStreams(streams.filter(stream => stream.id !== id));
       toast({
         title: "Success",
         description: "Stream deleted successfully",
@@ -186,7 +140,7 @@ const AdminStreams = () => {
       console.error("Error deleting stream:", error);
       toast({
         title: "Error",
-        description: "Failed to delete stream. Please try again.",
+        description: "Failed to delete stream",
         variant: "destructive",
       });
     }
@@ -200,168 +154,134 @@ const AdminStreams = () => {
           <div className="mb-8 flex justify-between items-center">
             <div>
               <h1 className="text-3xl font-bold text-gradient">Stream Management</h1>
-              <p className="text-white/70">Manage live and upcoming streams</p>
+              <p className="text-white/70">Manage live streams and broadcasts</p>
             </div>
-            <div className="flex space-x-4">
-              {!isCreating ? (
-                <Button
-                  onClick={() => setIsCreating(true)}
-                  className="bg-gaming-purple hover:bg-gaming-purple-bright"
-                >
-                  Add Stream
-                </Button>
-              ) : null}
-              <Button
-                onClick={() => navigate("/admin")}
-                variant="outline"
-                className="border-gaming-purple/50 text-gaming-purple hover:bg-gaming-purple/20 hover:text-white"
-              >
-                Back to Dashboard
-              </Button>
-            </div>
+            <Button
+              onClick={() => navigate("/admin")}
+              variant="outline"
+              className="border-gaming-purple/50 text-gaming-purple hover:bg-gaming-purple/20 hover:text-white"
+            >
+              Back to Dashboard
+            </Button>
           </div>
 
-          {isCreating && (
-            <div className="gamer-card p-6 mb-8">
-              <div className="flex justify-between items-center mb-4">
-                <h2 className="text-xl font-bold">{isEditing ? "Edit Stream" : "Add Stream"}</h2>
-                <Button 
-                  variant="outline"
-                  onClick={() => {
-                    setIsCreating(false);
-                    setIsEditing(false);
-                    setCurrentStreamId(null);
-                    setFormData({
-                      title: "",
-                      streamUrl: "",
-                      thumbnailUrl: "",
-                      streamerName: "",
-                      isLive: true
-                    });
-                  }}
-                >
-                  Cancel
-                </Button>
+          <div className="gamer-card p-6 mb-8">
+            <h2 className="text-xl font-bold mb-4">Add New Stream</h2>
+            <form onSubmit={handleSubmit} className="space-y-4">
+              <div>
+                <label className="block text-sm font-medium mb-1">Stream Title</label>
+                <Input
+                  name="title"
+                  value={newStream.title}
+                  onChange={handleChange}
+                  placeholder="Free Fire Tournament Finals"
+                  required
+                />
               </div>
               
-              <form onSubmit={handleSubmit} className="space-y-4">
-                <div>
-                  <label className="block text-sm font-medium mb-1">Stream Title</label>
-                  <Input
-                    name="title"
-                    value={formData.title}
-                    onChange={handleChange}
-                    placeholder="Enter stream title"
-                    required
-                  />
-                </div>
-                
-                <div>
-                  <label className="block text-sm font-medium mb-1">Streamer Name</label>
-                  <Input
-                    name="streamerName"
-                    value={formData.streamerName}
-                    onChange={handleChange}
-                    placeholder="Enter streamer name"
-                    required
-                  />
-                </div>
-                
-                <div>
-                  <label className="block text-sm font-medium mb-1">Stream URL (YouTube or Twitch embed URL)</label>
-                  <Input
-                    name="streamUrl"
-                    value={formData.streamUrl}
-                    onChange={handleChange}
-                    placeholder="https://www.youtube.com/embed/..."
-                    required
-                  />
-                </div>
-                
-                <div>
-                  <label className="block text-sm font-medium mb-1">Thumbnail URL</label>
-                  <Input
-                    name="thumbnailUrl"
-                    value={formData.thumbnailUrl}
-                    onChange={handleChange}
-                    placeholder="https://example.com/thumbnail.jpg"
-                  />
-                </div>
-                
-                <div className="flex items-center">
-                  <input
-                    type="checkbox"
-                    id="isLive"
-                    name="isLive"
-                    checked={formData.isLive}
-                    onChange={(e) => setFormData(prev => ({ ...prev, isLive: e.target.checked }))}
-                    className="mr-2"
-                  />
-                  <label htmlFor="isLive">This stream is live now</label>
-                </div>
-                
-                <Button
-                  type="submit"
-                  className="bg-gaming-purple hover:bg-gaming-purple-bright"
-                >
-                  {isEditing ? "Update Stream" : "Add Stream"}
-                </Button>
-              </form>
-            </div>
-          )}
+              <div>
+                <label className="block text-sm font-medium mb-1">Description</label>
+                <Input
+                  name="description"
+                  value={newStream.description}
+                  onChange={handleChange}
+                  placeholder="Watch the exciting finals of our monthly tournament"
+                />
+              </div>
+              
+              <div>
+                <label className="block text-sm font-medium mb-1">Stream URL (YouTube embed)</label>
+                <Input
+                  name="stream_url"
+                  value={newStream.stream_url}
+                  onChange={handleChange}
+                  placeholder="https://www.youtube.com/embed/VIDEO_ID"
+                  required
+                />
+              </div>
+              
+              <div>
+                <label className="block text-sm font-medium mb-1">Thumbnail URL</label>
+                <Input
+                  name="thumbnail_url"
+                  value={newStream.thumbnail_url}
+                  onChange={handleChange}
+                  placeholder="https://example.com/thumbnail.jpg"
+                />
+              </div>
+              
+              <div>
+                <label className="block text-sm font-medium mb-1">Schedule Date</label>
+                <Input
+                  type="datetime-local"
+                  name="scheduled_for"
+                  value={newStream.scheduled_for}
+                  onChange={handleChange}
+                />
+              </div>
+              
+              <Button
+                type="submit"
+                className="bg-gaming-purple hover:bg-gaming-purple-bright"
+                disabled={isLoading}
+              >
+                {isLoading ? "Adding Stream..." : "Add Stream"}
+              </Button>
+            </form>
+          </div>
 
           <div className="gamer-card p-6">
             <h2 className="text-xl font-bold mb-4">Manage Streams</h2>
-            
             {isLoading ? (
-              <div className="flex items-center justify-center p-12">
-                <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-gaming-purple"></div>
-              </div>
+              <div className="text-center py-8">Loading streams...</div>
             ) : streams.length === 0 ? (
-              <div className="text-center py-8 text-white/70">
-                <Video className="mx-auto h-12 w-12 mb-2 opacity-50" />
-                <p>No streams found</p>
-              </div>
+              <div className="text-center py-8 text-white/70">No streams available</div>
             ) : (
-              <div className="space-y-4">
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                 {streams.map((stream) => (
-                  <div key={stream.id} className="bg-gaming-dark-purple/50 p-4 rounded-lg">
-                    <div className="flex flex-col md:flex-row justify-between">
-                      <div className="flex space-x-4">
-                        <div className="w-24 h-24 relative flex-shrink-0">
-                          <img 
-                            src={stream.thumbnail_url || "https://via.placeholder.com/320x180.png?text=No+Thumbnail"} 
-                            alt={stream.title}
-                            className="w-full h-full object-cover rounded"
-                          />
-                          {stream.is_live && (
-                            <div className="absolute top-1 right-1 bg-red-500 text-white text-xs px-1.5 py-0.5 rounded">
-                              LIVE
-                            </div>
-                          )}
+                  <div key={stream.id} className="bg-gray-800/50 rounded-lg overflow-hidden border border-gray-700">
+                    <div
+                      className="h-40 bg-cover bg-center relative"
+                      style={{
+                        backgroundImage: stream.thumbnail_url
+                          ? `url(${stream.thumbnail_url})`
+                          : "url('https://images.unsplash.com/photo-1542751371-adc38448a05e')",
+                      }}
+                    >
+                      {stream.is_live && (
+                        <div className="absolute top-2 right-2">
+                          <span className="px-2 py-1 text-xs rounded bg-red-600 text-white flex items-center">
+                            <span className="h-2 w-2 bg-white rounded-full mr-1"></span>
+                            LIVE
+                          </span>
                         </div>
-                        <div>
-                          <h3 className="text-lg font-bold">{stream.title}</h3>
-                          <p className="text-white/70">Streamer: {stream.streamer_name}</p>
-                          <p className="text-white/50 text-sm">Added on: {new Date(stream.created_at).toLocaleDateString()}</p>
-                        </div>
+                      )}
+                    </div>
+                    <div className="p-4">
+                      <h3 className="text-lg font-bold">{stream.title}</h3>
+                      <p className="text-sm text-white/70 mb-2">{stream.description}</p>
+                      <div className="flex justify-between mb-4">
+                        <span className="text-xs text-white/50">
+                          {stream.is_live 
+                            ? "Streaming now" 
+                            : `Scheduled for: ${new Date(stream.scheduled_for).toLocaleString()}`}
+                        </span>
                       </div>
-                      <div className="flex space-x-2 mt-4 md:mt-0">
+                      <div className="flex gap-2">
                         <Button
-                          size="sm"
                           variant="outline"
-                          className="h-8 w-8 p-0"
-                          onClick={() => handleEdit(stream)}
+                          size="sm"
+                          className="flex-1"
+                          onClick={() => window.open(stream.stream_url, "_blank")}
                         >
-                          <Edit className="h-4 w-4" />
+                          View Stream
                         </Button>
                         <Button
+                          variant="destructive"
                           size="sm"
-                          variant="outline"
-                          className="h-8 w-8 p-0 text-red-500 hover:text-red-600"
-                          onClick={() => handleDelete(stream.id)}
+                          onClick={() => deleteStream(stream.id)}
                         >
-                          <Trash className="h-4 w-4" />
+                          Delete
                         </Button>
                       </div>
                     </div>
