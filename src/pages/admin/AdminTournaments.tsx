@@ -1,5 +1,5 @@
 
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { useAuth } from "@/context/AuthContext";
 import Navbar from "@/components/Navbar";
 import Footer from "@/components/Footer";
@@ -9,6 +9,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { toast } from "@/hooks/use-toast";
 import { useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
+import { Tables } from "@/integrations/supabase/types";
 
 interface TournamentFormData {
   title: string;
@@ -29,6 +30,9 @@ const AdminTournaments = () => {
   const { user } = useAuth();
   const navigate = useNavigate();
   const [isLoading, setIsLoading] = useState(false);
+  const [tournaments, setTournaments] = useState<Tables<"tournaments">[]>([]);
+  const [isEditing, setIsEditing] = useState(false);
+  const [currentTournamentId, setCurrentTournamentId] = useState<string | null>(null);
   
   const [formData, setFormData] = useState<TournamentFormData>({
     title: "",
@@ -45,9 +49,107 @@ const AdminTournaments = () => {
     rules: "",
   });
 
+  useEffect(() => {
+    fetchTournaments();
+  }, []);
+
+  const fetchTournaments = async () => {
+    try {
+      const { data, error } = await supabase
+        .from("tournaments")
+        .select("*")
+        .order("created_at", { ascending: false });
+      
+      if (error) throw error;
+      setTournaments(data || []);
+    } catch (error) {
+      console.error("Error fetching tournaments:", error);
+      toast({
+        title: "Error",
+        description: "Failed to load tournaments",
+        variant: "destructive",
+      });
+    }
+  };
+
   const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>) => {
     const { name, value } = e.target;
     setFormData(prev => ({ ...prev, [name]: value }));
+  };
+
+  const handleEdit = (tournament: Tables<"tournaments">) => {
+    setIsEditing(true);
+    setCurrentTournamentId(tournament.id);
+    
+    // Format dates for datetime-local input
+    const formatDate = (dateString: string | null) => {
+      if (!dateString) return "";
+      return new Date(dateString).toISOString().slice(0, 16);
+    };
+    
+    setFormData({
+      title: tournament.title,
+      description: tournament.description || "",
+      startDate: formatDate(tournament.start_date),
+      endDate: formatDate(tournament.end_date),
+      registrationDeadline: formatDate(tournament.registration_deadline),
+      prizePool: tournament.prize_pool || "",
+      entryFee: tournament.entry_fee || "",
+      maxTeams: tournament.max_teams,
+      teamSize: tournament.team_size,
+      mode: tournament.mode,
+      imageUrl: tournament.image_url || "",
+      rules: tournament.rules || "",
+    });
+    
+    // Scroll to form
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+  };
+
+  const handleDelete = async (id: string) => {
+    if (!confirm("Are you sure you want to delete this tournament?")) return;
+    
+    try {
+      const { error } = await supabase
+        .from("tournaments")
+        .delete()
+        .eq("id", id);
+      
+      if (error) throw error;
+      
+      toast({
+        title: "Success",
+        description: "Tournament deleted successfully",
+      });
+      
+      fetchTournaments();
+    } catch (error) {
+      console.error("Error deleting tournament:", error);
+      toast({
+        title: "Error",
+        description: "Failed to delete tournament",
+        variant: "destructive",
+      });
+    }
+  };
+
+  const resetForm = () => {
+    setFormData({
+      title: "",
+      description: "",
+      startDate: "",
+      endDate: "",
+      registrationDeadline: "",
+      prizePool: "",
+      entryFee: "",
+      maxTeams: 32,
+      teamSize: "Squad (4 players)",
+      mode: "Online",
+      imageUrl: "",
+      rules: "",
+    });
+    setIsEditing(false);
+    setCurrentTournamentId(null);
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -64,48 +166,66 @@ const AdminTournaments = () => {
         return;
       }
       
-      const { data, error } = await supabase
-        .from("tournaments")
-        .insert([
-          {
-            title: formData.title,
-            description: formData.description,
-            start_date: formData.startDate,
-            end_date: formData.endDate || null,
-            registration_deadline: formData.registrationDeadline,
-            prize_pool: formData.prizePool,
-            entry_fee: formData.entryFee,
-            max_teams: formData.maxTeams,
-            team_size: formData.teamSize,
-            mode: formData.mode,
-            image_url: formData.imageUrl || null,
-            rules: formData.rules || null,
-            creator_id: user.id,
-            status: "Registration Open",
-          },
-        ])
-        .select();
+      const tournamentData = {
+        title: formData.title,
+        description: formData.description,
+        start_date: formData.startDate,
+        end_date: formData.endDate || null,
+        registration_deadline: formData.registrationDeadline,
+        prize_pool: formData.prizePool,
+        entry_fee: formData.entryFee,
+        max_teams: formData.maxTeams,
+        team_size: formData.teamSize,
+        mode: formData.mode,
+        image_url: formData.imageUrl || null,
+        rules: formData.rules || null,
+        creator_id: user.id,
+        status: "Registration Open",
+      };
       
-      if (error) {
-        throw error;
+      let result;
+      
+      if (isEditing && currentTournamentId) {
+        // Update existing tournament
+        result = await supabase
+          .from("tournaments")
+          .update(tournamentData)
+          .eq("id", currentTournamentId);
+      } else {
+        // Create new tournament
+        result = await supabase
+          .from("tournaments")
+          .insert([tournamentData])
+          .select();
+      }
+      
+      if (result.error) {
+        console.error("Database error:", result.error);
+        throw result.error;
       }
       
       toast({
         title: "Success",
-        description: "Tournament created successfully!",
+        description: isEditing ? "Tournament updated successfully!" : "Tournament created successfully!",
       });
       
-      navigate("/tournaments");
+      resetForm();
+      fetchTournaments();
     } catch (error) {
-      console.error("Error creating tournament:", error);
+      console.error("Error creating/updating tournament:", error);
       toast({
         title: "Error",
-        description: "Failed to create tournament. Please try again.",
+        description: "Failed to save tournament. Please try again.",
         variant: "destructive",
       });
     } finally {
       setIsLoading(false);
     }
+  };
+
+  const formatDate = (dateString: string | null) => {
+    if (!dateString) return "N/A";
+    return new Date(dateString).toLocaleDateString();
   };
 
   return (
@@ -127,8 +247,8 @@ const AdminTournaments = () => {
             </Button>
           </div>
 
-          <div className="gamer-card p-6">
-            <h2 className="text-xl font-bold mb-4">Create New Tournament</h2>
+          <div className="gamer-card p-6 mb-8">
+            <h2 className="text-xl font-bold mb-4">{isEditing ? "Edit Tournament" : "Create New Tournament"}</h2>
             <form onSubmit={handleSubmit} className="space-y-6">
               <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                 <div className="space-y-4">
@@ -275,14 +395,89 @@ const AdminTournaments = () => {
                 />
               </div>
               
-              <Button
-                type="submit"
-                className="bg-gaming-purple hover:bg-gaming-purple-bright"
-                disabled={isLoading}
-              >
-                {isLoading ? "Creating Tournament..." : "Create Tournament"}
-              </Button>
+              <div className="flex space-x-4">
+                <Button
+                  type="submit"
+                  className="bg-gaming-purple hover:bg-gaming-purple-bright"
+                  disabled={isLoading}
+                >
+                  {isLoading ? (isEditing ? "Updating..." : "Creating...") : (isEditing ? "Update Tournament" : "Create Tournament")}
+                </Button>
+
+                {isEditing && (
+                  <Button
+                    type="button"
+                    variant="outline"
+                    onClick={resetForm}
+                  >
+                    Cancel
+                  </Button>
+                )}
+              </div>
             </form>
+          </div>
+          
+          {/* Tournament List */}
+          <div className="gamer-card p-6">
+            <h2 className="text-xl font-bold mb-4">Tournament List</h2>
+            
+            {tournaments.length === 0 ? (
+              <p className="text-center text-white/70 py-6">No tournaments created yet</p>
+            ) : (
+              <div className="overflow-x-auto">
+                <table className="w-full">
+                  <thead>
+                    <tr className="border-b border-white/20">
+                      <th className="text-left py-3 px-4">Title</th>
+                      <th className="text-left py-3 px-4">Date</th>
+                      <th className="text-left py-3 px-4">Status</th>
+                      <th className="text-left py-3 px-4">Teams</th>
+                      <th className="text-left py-3 px-4">Actions</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {tournaments.map((tournament) => (
+                      <tr key={tournament.id} className="border-b border-white/10 hover:bg-white/5">
+                        <td className="py-3 px-4">{tournament.title}</td>
+                        <td className="py-3 px-4">{formatDate(tournament.start_date)}</td>
+                        <td className="py-3 px-4">
+                          <span className={`px-2 py-1 text-xs rounded ${
+                            tournament.status === "Registration Open" 
+                              ? "bg-green-500/20 text-green-300" 
+                              : tournament.status === "Ongoing" 
+                                ? "bg-yellow-500/20 text-yellow-300"
+                                : "bg-red-500/20 text-red-300"
+                          }`}>
+                            {tournament.status}
+                          </span>
+                        </td>
+                        <td className="py-3 px-4">{tournament.max_teams}</td>
+                        <td className="py-3 px-4">
+                          <div className="flex space-x-2">
+                            <Button 
+                              variant="outline" 
+                              size="sm" 
+                              className="border-gaming-purple/50 text-gaming-purple hover:bg-gaming-purple/20 hover:text-white"
+                              onClick={() => handleEdit(tournament)}
+                            >
+                              Edit
+                            </Button>
+                            <Button 
+                              variant="outline" 
+                              size="sm" 
+                              className="border-red-500/50 text-red-500 hover:bg-red-500/20 hover:text-red-300"
+                              onClick={() => handleDelete(tournament.id)}
+                            >
+                              Delete
+                            </Button>
+                          </div>
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            )}
           </div>
         </div>
       </main>

@@ -48,7 +48,7 @@ const TournamentCard: React.FC<TournamentCardProps> = (props) => {
   const tournament = props.tournament || {
     id: "",
     title: props.title || "",
-    image_url: props.image || "",
+    image_url: props.image || props.image_url || "",
     start_date: props.date ? new Date(props.date).toISOString() : new Date().toISOString(),
     prize_pool: props.prizePool || "",
     entry_fee: props.entryFee || "",
@@ -128,11 +128,8 @@ const TournamentCard: React.FC<TournamentCardProps> = (props) => {
   };
 
   const viewTournament = () => {
-    // For now just show a toast since tournament detail page isn't implemented yet
-    toast({
-      title: tournament.title,
-      description: "Viewing tournament details",
-    });
+    // Navigate to tournament details page
+    navigate(`/tournaments/${tournament.id}`);
   };
 
   // Format the date to be more readable
@@ -145,6 +142,7 @@ const TournamentCard: React.FC<TournamentCardProps> = (props) => {
     return new Date(dateString).toLocaleDateString(undefined, options);
   };
 
+  // Use a default image if none is provided
   const imageUrl = tournament.image_url || 
     (props.image ? props.image : "https://images.unsplash.com/photo-1542751371-adc38448a05e?q=80&w=1770&auto=format&fit=crop&ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D");
 
@@ -192,7 +190,10 @@ const TournamentCard: React.FC<TournamentCardProps> = (props) => {
 
           <div className="flex justify-between mt-4">
             {showViewButton && (
-              <Button variant="outline" size="sm" className="flex-1 mr-2">
+              <Button variant="outline" size="sm" className="flex-1 mr-2" onClick={(e) => {
+                e.stopPropagation();
+                viewTournament();
+              }}>
                 View Details
               </Button>
             )}

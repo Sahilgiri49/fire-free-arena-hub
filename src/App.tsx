@@ -9,6 +9,7 @@ import ProtectedRoute from "@/components/auth/ProtectedRoute";
 import Index from "./pages/Index";
 import NotFound from "./pages/NotFound";
 import Tournaments from "./pages/Tournaments";
+import TournamentDetails from "./pages/TournamentDetails";
 import Teams from "./pages/Teams";
 import Schedule from "./pages/Schedule";
 import Streams from "./pages/Streams";
@@ -35,6 +36,7 @@ const App = () => (
           <Routes>
             <Route path="/" element={<Index />} />
             <Route path="/tournaments" element={<Tournaments />} />
+            <Route path="/tournaments/:id" element={<TournamentDetails />} />
             <Route path="/teams" element={<Teams />} />
             <Route path="/schedule" element={<Schedule />} />
             <Route path="/streams" element={<Streams />} />

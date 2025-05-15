@@ -1,108 +1,43 @@
 
-import React from "react";
+import React, { useState, useEffect } from "react";
 import Navbar from "@/components/Navbar";
 import Footer from "@/components/Footer";
-import TournamentCard, { TournamentCardData } from "@/components/TournamentCard";
+import TournamentCard from "@/components/TournamentCard";
+import { supabase } from "@/integrations/supabase/client";
+import { Tables } from "@/integrations/supabase/types";
+import { toast } from "@/hooks/use-toast";
 
 const Tournaments = () => {
-  const tournaments: TournamentCardData[] = [
-    {
-      title: "Free Fire Pro League Season 5",
-      image: "https://images.unsplash.com/photo-1526374965328-7f61d4dc18c5",
-      date: "May 25-28, 2025",
-      prizePool: "₹100,000",
-      entryFee: "₹1,000",
-      teamSize: "Squad (4 players)",
-      mode: "Online",
-      status: "Registration Open",
-      registeredTeams: 64,
-      maxTeams: 128,
-    },
-    {
-      title: "Free Fire Masters Cup",
-      image: "https://images.unsplash.com/photo-1605810230434-7631ac76ec81",
-      date: "June 10-12, 2025",
-      prizePool: "₹50,000",
-      entryFee: "₹500",
-      teamSize: "Squad (4 players)",
-      mode: "Online",
-      status: "Registration Open",
-      registeredTeams: 42,
-      maxTeams: 64,
-    },
-    {
-      title: "Free Fire Solo Championship",
-      image: "https://images.unsplash.com/photo-1487058792275-0ad4aaf24ca7",
-      date: "May 20, 2025",
-      prizePool: "₹25,000",
-      entryFee: "₹200",
-      teamSize: "Solo",
-      mode: "Online",
-      status: "Registration Open",
-      registeredTeams: 85,
-      maxTeams: 100,
-    },
-    {
-      title: "Delhi LAN Tournament",
-      image: "https://images.unsplash.com/photo-1470071459604-3b5ec3a7fe05",
-      date: "July 15-16, 2025",
-      prizePool: "₹200,000",
-      entryFee: "₹2,000",
-      teamSize: "Squad (4 players)",
-      mode: "Offline",
-      status: "Registration Open",
-      registeredTeams: 12,
-      maxTeams: 32,
-    },
-    {
-      title: "Free Fire Regional Qualifiers",
-      image: "https://images.unsplash.com/photo-1526374965328-7f61d4dc18c5",
-      date: "June 5-7, 2025",
-      prizePool: "₹30,000",
-      entryFee: "₹300",
-      teamSize: "Squad (4 players)",
-      mode: "Online",
-      status: "Registration Open",
-      registeredTeams: 55,
-      maxTeams: 128,
-    },
-    {
-      title: "Free Fire Women's Cup",
-      image: "https://images.unsplash.com/photo-1605810230434-7631ac76ec81",
-      date: "June 18-20, 2025",
-      prizePool: "₹75,000",
-      entryFee: "₹500",
-      teamSize: "Squad (4 players)",
-      mode: "Online",
-      status: "Registration Open",
-      registeredTeams: 28,
-      maxTeams: 64,
-    },
-    {
-      title: "Free Fire Duo Showdown",
-      image: "https://images.unsplash.com/photo-1487058792275-0ad4aaf24ca7",
-      date: "May 30, 2025",
-      prizePool: "₹20,000",
-      entryFee: "₹250",
-      teamSize: "Duo (2 players)",
-      mode: "Online",
-      status: "Registration Open",
-      registeredTeams: 95,
-      maxTeams: 128,
-    },
-    {
-      title: "Mumbai Gaming Fest",
-      image: "https://images.unsplash.com/photo-1470071459604-3b5ec3a7fe05",
-      date: "August 5-7, 2025",
-      prizePool: "₹150,000",
-      entryFee: "₹1,500",
-      teamSize: "Squad (4 players)",
-      mode: "Offline",
-      status: "Registration Open",
-      registeredTeams: 10,
-      maxTeams: 32,
-    },
-  ];
+  const [tournaments, setTournaments] = useState<Tables<"tournaments">[]>([]);
+  const [isLoading, setIsLoading] = useState(true);
+
+  useEffect(() => {
+    const fetchTournaments = async () => {
+      try {
+        const { data, error } = await supabase
+          .from("tournaments")
+          .select("*")
+          .order("created_at", { ascending: false });
+        
+        if (error) {
+          throw error;
+        }
+        
+        setTournaments(data || []);
+      } catch (error) {
+        console.error("Error fetching tournaments:", error);
+        toast({
+          title: "Error",
+          description: "Failed to load tournaments",
+          variant: "destructive",
+        });
+      } finally {
+        setIsLoading(false);
+      }
+    };
+
+    fetchTournaments();
+  }, []);
 
   return (
     <div className="min-h-screen flex flex-col">
@@ -116,23 +51,25 @@ const Tournaments = () => {
             </p>
           </div>
 
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-            {tournaments.map((tournament, index) => (
-              <TournamentCard 
-                key={index} 
-                title={tournament.title}
-                image={tournament.image}
-                date={tournament.date}
-                prizePool={tournament.prizePool}
-                entryFee={tournament.entryFee}
-                teamSize={tournament.teamSize}
-                mode={tournament.mode}
-                status={tournament.status}
-                registeredTeams={tournament.registeredTeams}
-                maxTeams={tournament.maxTeams}
-              />
-            ))}
-          </div>
+          {isLoading ? (
+            <div className="flex justify-center items-center py-20">
+              <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-gaming-purple"></div>
+            </div>
+          ) : tournaments.length > 0 ? (
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+              {tournaments.map((tournament) => (
+                <TournamentCard 
+                  key={tournament.id} 
+                  tournament={tournament}
+                />
+              ))}
+            </div>
+          ) : (
+            <div className="text-center py-20 text-white/70">
+              <p className="text-xl">No tournaments available at the moment.</p>
+              <p>Check back later for upcoming events!</p>
+            </div>
+          )}
         </div>
       </main>
       <Footer />

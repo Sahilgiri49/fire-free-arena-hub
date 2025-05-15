@@ -1,11 +1,43 @@
 
-import React from "react";
+import React, { useState, useEffect } from "react";
 import { ArrowRight } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import TournamentCard, { TournamentCardData } from "@/components/TournamentCard";
+import TournamentCard from "@/components/TournamentCard";
+import { supabase } from "@/integrations/supabase/client";
+import { Tables } from "@/integrations/supabase/types";
+import { useNavigate } from "react-router-dom";
 
 const TournamentSection = () => {
-  const tournaments: TournamentCardData[] = [
+  const navigate = useNavigate();
+  const [tournaments, setTournaments] = useState<Tables<"tournaments">[]>([]);
+  const [isLoading, setIsLoading] = useState(true);
+
+  useEffect(() => {
+    const fetchTournaments = async () => {
+      try {
+        const { data, error } = await supabase
+          .from("tournaments")
+          .select("*")
+          .order("created_at", { ascending: false })
+          .limit(4);
+        
+        if (error) {
+          throw error;
+        }
+        
+        setTournaments(data || []);
+      } catch (error) {
+        console.error("Error fetching tournaments:", error);
+      } finally {
+        setIsLoading(false);
+      }
+    };
+
+    fetchTournaments();
+  }, []);
+
+  // Fallback to mock data if no tournaments from Supabase
+  const mockTournaments = [
     {
       title: "Free Fire Pro League Season 5",
       image: "https://images.unsplash.com/photo-1526374965328-7f61d4dc18c5",
@@ -56,6 +88,8 @@ const TournamentSection = () => {
     },
   ];
 
+  const displayTournaments = tournaments.length > 0 ? tournaments : mockTournaments;
+
   return (
     <div className="container mx-auto px-4 py-16">
       <div className="flex justify-between items-center mb-8">
@@ -70,29 +104,45 @@ const TournamentSection = () => {
         <Button
           variant="outline"
           className="border-gaming-purple/50 text-gaming-purple hover:bg-gaming-purple/20 hover:text-white"
+          onClick={() => navigate("/tournaments")}
         >
           View All
           <ArrowRight className="ml-2 h-4 w-4" />
         </Button>
       </div>
 
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-        {tournaments.map((tournament, index) => (
-          <TournamentCard 
-            key={index} 
-            title={tournament.title}
-            image={tournament.image}
-            date={tournament.date}
-            prizePool={tournament.prizePool}
-            entryFee={tournament.entryFee}
-            teamSize={tournament.teamSize}
-            mode={tournament.mode}
-            status={tournament.status}
-            registeredTeams={tournament.registeredTeams}
-            maxTeams={tournament.maxTeams}
-          />
-        ))}
-      </div>
+      {isLoading ? (
+        <div className="flex justify-center items-center py-20">
+          <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-gaming-purple"></div>
+        </div>
+      ) : (
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+          {tournaments.length > 0 ? (
+            tournaments.map((tournament) => (
+              <TournamentCard 
+                key={tournament.id} 
+                tournament={tournament}
+              />
+            ))
+          ) : (
+            mockTournaments.map((tournament, index) => (
+              <TournamentCard 
+                key={index} 
+                title={tournament.title}
+                image={tournament.image}
+                date={tournament.date}
+                prizePool={tournament.prizePool}
+                entryFee={tournament.entryFee}
+                teamSize={tournament.teamSize}
+                mode={tournament.mode}
+                status={tournament.status}
+                registeredTeams={tournament.registeredTeams}
+                maxTeams={tournament.maxTeams}
+              />
+            ))
+          )}
+        </div>
+      )}
     </div>
   );
 };
