@@ -9,6 +9,56 @@ export type Json =
 export type Database = {
   public: {
     Tables: {
+      streams: {
+        Row: {
+          id: string
+          title: string
+          description: string | null
+          thumbnail_url: string
+          stream_url: string
+          is_live: boolean
+          viewers: number
+          streamer: string
+          scheduled_for: string | null
+          created_at: string
+          updated_at: string
+        }
+        Insert: {
+          id?: string
+          title: string
+          description?: string | null
+          thumbnail_url: string
+          stream_url: string
+          is_live?: boolean
+          viewers?: number
+          streamer: string
+          scheduled_for?: string | null
+          created_at?: string
+          updated_at?: string
+        }
+        Update: {
+          id?: string
+          title?: string
+          description?: string | null
+          thumbnail_url?: string
+          stream_url?: string
+          is_live?: boolean
+          viewers?: number
+          streamer?: string
+          scheduled_for?: string | null
+          created_at?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "streams_streamer_fkey"
+            columns: ["streamer"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          }
+        ]
+      }
       match_participants: {
         Row: {
           id: string

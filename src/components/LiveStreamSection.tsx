@@ -1,7 +1,11 @@
-import React from "react";
-import { Video, Users, ArrowRight } from "lucide-react";
+import { useState, useEffect } from "react";
+import { Video, Users, ArrowRight, Calendar } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
+import { supabase } from "@/integrations/supabase/client";
+import type { Database } from "@/integrations/supabase/types";
+
+type Stream = Database['public']['Tables']['streams']['Row'];
 
 interface StreamCardProps {
   title: string;
@@ -11,6 +15,7 @@ interface StreamCardProps {
   streamUrl: string;
   isLive: boolean;
   featured?: boolean;
+  scheduled?: string;
 }
 
 const StreamCard = ({
@@ -21,6 +26,7 @@ const StreamCard = ({
   streamUrl,
   isLive,
   featured = false,
+  scheduled,
 }: StreamCardProps) => {
   return (
     <div className={cn(
@@ -47,8 +53,8 @@ const StreamCard = ({
           </div>
         </div>
         
-        {/* Live Badge */}
-        {isLive && (
+        {/* Live/Scheduled Badge */}
+        {isLive ? (
           <div className="absolute top-3 left-3 bg-red-600 text-white text-xs font-bold px-2 py-1 rounded-md flex items-center gap-1">
             <span className="relative flex h-2 w-2">
               <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-white opacity-75"></span>
@@ -56,20 +62,27 @@ const StreamCard = ({
             </span>
             LIVE
           </div>
-        )}
+        ) : scheduled ? (
+          <div className="absolute top-3 left-3 bg-gaming-purple/80 text-white text-xs font-bold px-2 py-1 rounded-md flex items-center gap-1">
+            <Calendar className="h-3 w-3 mr-1" />
+            {new Date(scheduled).toLocaleString()}
+          </div>
+        ) : null}
         
         {/* Viewers Count */}
-        <div className="absolute bottom-3 left-3 bg-black/70 text-white text-xs px-2 py-1 rounded flex items-center gap-1">
-          <Users className="h-3 w-3" />
-          {viewers} viewers
-        </div>
+        {isLive && (
+          <div className="absolute bottom-3 left-3 bg-black/70 text-white text-xs px-2 py-1 rounded flex items-center gap-1">
+            <Users className="h-3 w-3" />
+            {viewers} viewers
+          </div>
+        )}
       </div>
       
       {/* Stream Content */}
       <div className="p-4">
         <h3 className={cn(
           "font-bold text-white mb-1 line-clamp-2",
-          featured ? "text-xl" : "text-base"
+          featured && "text-lg"
         )}>
           {title}
         </h3>
@@ -91,41 +104,63 @@ const StreamCard = ({
 };
 
 const LiveStreamSection = () => {
-  const streams = [
-    {
-      title: "Free Fire Pro League Season 4 - Day 2",
-      thumbnail: "https://images.unsplash.com/photo-1605810230434-7631ac76ec81",
-      viewers: 15420,
-      streamer: "Official Free Fire Channel",
-      streamUrl: "#",
-      isLive: true,
-      featured: true,
-    },
-    {
-      title: "Free Fire Regional Cup - Semi-Finals",
-      thumbnail: "https://images.unsplash.com/photo-1526374965328-7f61d4dc18c5",
-      viewers: 8753,
-      streamer: "Free Fire Esports",
-      streamUrl: "#",
-      isLive: true,
-    },
-    {
-      title: "Road to Grand Finals - Team Analysis",
-      thumbnail: "https://images.unsplash.com/photo-1487058792275-0ad4aaf24ca7",
-      viewers: 3241,
-      streamer: "Pro Gaming Network",
-      streamUrl: "#",
-      isLive: false,
-    },
-    {
-      title: "Free Fire Strategies & Tips with Pro Players",
-      thumbnail: "https://images.unsplash.com/photo-1470071459604-3b5ec3a7fe05",
-      viewers: 5823,
-      streamer: "Gaming Academy",
-      streamUrl: "#",
-      isLive: true,
-    },
-  ];
+  const [streams, setStreams] = useState<Stream[]>([]);
+  const [isLoading, setIsLoading] = useState(true);
+
+  useEffect(() => {
+    let isMounted = true;
+
+    const fetchStreams = async () => {
+      try {
+        const { data: streamData, error } = await supabase
+          .from('streams')
+          .select('*')
+          .or('is_live.eq.true,scheduled_for.gt.now()')
+          .order('is_live', { ascending: false })
+          .order('scheduled_for', { ascending: true })
+          .limit(6);
+        
+        if (error) throw error;
+        
+        if (isMounted) {
+          setStreams(streamData || []);
+        }
+      } catch (error) {
+        console.error('Error fetching streams:', error);
+      } finally {
+        if (isMounted) {
+          setIsLoading(false);
+        }
+      }
+    };
+
+    fetchStreams();
+
+    return () => {
+      isMounted = false;
+    };
+  }, []);
+
+  if (isLoading) {
+    return (
+      <div className="container mx-auto px-4 py-16">
+        <div className="flex justify-center items-center py-20">
+          <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-gaming-purple"></div>
+        </div>
+      </div>
+    );
+  }
+
+  if (streams.length === 0) {
+    return (
+      <div className="container mx-auto px-4 py-16">
+        <div className="text-center py-12">
+          <h2 className="text-3xl font-bold text-gradient mb-2">Live Streams</h2>
+          <p className="text-white/70 mb-8">No live streams available at the moment</p>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="container mx-auto px-4 py-16">
@@ -137,6 +172,7 @@ const LiveStreamSection = () => {
         <Button
           variant="outline"
           className="border-gaming-purple/50 text-gaming-purple hover:bg-gaming-purple/20 hover:text-white"
+          onClick={() => window.location.href = '/streams'}
         >
           View All
           <ArrowRight className="ml-2 h-4 w-4" />
@@ -146,8 +182,15 @@ const LiveStreamSection = () => {
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
         {streams.map((stream, index) => (
           <StreamCard
-            key={index}
-            {...stream}
+            key={stream.id}
+            title={stream.title}
+            thumbnail={stream.thumbnail_url}
+            viewers={stream.viewers}
+            streamer={stream.streamer}
+            streamUrl={stream.stream_url}
+            isLive={stream.is_live}
+            featured={index === 0}
+            scheduled={stream.scheduled_for}
           />
         ))}
       </div>

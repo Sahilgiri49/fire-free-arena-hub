@@ -1,4 +1,3 @@
-
 import { Toaster } from "@/components/ui/toaster";
 import { Toaster as Sonner } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
@@ -11,6 +10,9 @@ import NotFound from "./pages/NotFound";
 import Tournaments from "./pages/Tournaments";
 import TournamentDetails from "./pages/TournamentDetails";
 import Teams from "./pages/Teams";
+import TeamDetails from "./pages/TeamDetails";
+import CreateTeam from "./pages/CreateTeam";
+import JoinTeam from "./pages/JoinTeam";
 import Schedule from "./pages/Schedule";
 import Streams from "./pages/Streams";
 import News from "./pages/News";
@@ -38,6 +40,17 @@ const App = () => (
             <Route path="/tournaments" element={<Tournaments />} />
             <Route path="/tournaments/:id" element={<TournamentDetails />} />
             <Route path="/teams" element={<Teams />} />
+            <Route path="/teams/:id" element={<TeamDetails />} />
+            <Route path="/teams/create" element={
+              <ProtectedRoute>
+                <CreateTeam />
+              </ProtectedRoute>
+            } />
+            <Route path="/teams/join" element={
+              <ProtectedRoute>
+                <JoinTeam />
+              </ProtectedRoute>
+            } />
             <Route path="/schedule" element={<Schedule />} />
             <Route path="/streams" element={<Streams />} />
             <Route path="/news" element={<News />} />

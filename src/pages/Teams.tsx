@@ -1,12 +1,17 @@
 import React, { useState, useEffect } from "react";
+import { useNavigate } from "react-router-dom";
 import Navbar from "@/components/Navbar";
 import Footer from "@/components/Footer";
 import { Button } from "@/components/ui/button";
 import { Search, Users, Trophy, ArrowRight } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { supabase } from "@/integrations/supabase/client";
+import { useAuth } from "@/context/AuthContext";
+import { toast } from "@/hooks/use-toast";
+import CompeteSection from "@/components/CompeteSection";
 
 interface TeamCardProps {
+  id: string;
   name: string;
   logo: string;
   players: number;
@@ -15,7 +20,9 @@ interface TeamCardProps {
   region: string;
 }
 
-const TeamCard = ({ name, logo, players, wins, rank, region }: TeamCardProps) => {
+const TeamCard = ({ id, name, logo, players, wins, rank, region }: TeamCardProps) => {
+  const navigate = useNavigate();
+
   return (
     <div className="gamer-card p-5 hover-scale">
       <div className="flex items-center mb-4">
@@ -59,6 +66,7 @@ const TeamCard = ({ name, logo, players, wins, rank, region }: TeamCardProps) =>
         size="sm"
         variant="outline"
         className="w-full border-gaming-purple/50 text-gaming-purple hover:bg-gaming-purple/20 hover:text-white transition-colors"
+        onClick={() => navigate(`/teams/${id}`)}
       >
         View Team
         <ArrowRight className="ml-2 h-4 w-4" />
@@ -68,8 +76,36 @@ const TeamCard = ({ name, logo, players, wins, rank, region }: TeamCardProps) =>
 };
 
 const Teams = () => {
+  const navigate = useNavigate();
+  const { user } = useAuth();
   const [teams, setTeams] = useState<any[]>([]);
   const [isLoading, setIsLoading] = useState(true);
+
+  const handleCreateTeam = () => {
+    if (!user) {
+      toast({
+        title: "Authentication Required",
+        description: "Please sign in to create a team",
+        variant: "destructive",
+      });
+      navigate("/login");
+      return;
+    }
+    navigate("/teams/create");
+  };
+
+  const handleJoinTeam = () => {
+    if (!user) {
+      toast({
+        title: "Authentication Required",
+        description: "Please sign in to join a team",
+        variant: "destructive",
+      });
+      navigate("/login");
+      return;
+    }
+    navigate("/teams/join");
+  };
 
   useEffect(() => {
     const fetchTeams = async () => {
@@ -133,6 +169,7 @@ const Teams = () => {
               teams.map((team, index) => (
                 <TeamCard
                   key={team.id}
+                  id={team.id}
                   name={team.name}
                   logo={team.logo_url}
                   players={1} // Placeholder, can be replaced with real count
@@ -144,17 +181,29 @@ const Teams = () => {
             )}
           </div>
           
-          <div className="mt-12 text-center">
+          <div className="mt-12 flex justify-center gap-4">
             <Button 
-              variant="outline" 
               size="lg"
-              className="border-gaming-purple/50 text-gaming-purple hover:bg-gaming-purple/20 hover:text-white transition-colors"
+              className="bg-gaming-purple hover:bg-gaming-purple-bright text-white"
+              onClick={handleCreateTeam}
             >
-              Create Your Team
-              <Users className="ml-2 h-4 w-4" />
+              <Users className="mr-2 h-5 w-5" />
+              Create Team
+            </Button>
+            <Button 
+              size="lg"
+              variant="outline"
+              className="border-gaming-purple text-gaming-purple hover:bg-gaming-purple/20 hover:text-white"
+              onClick={handleJoinTeam}
+            >
+              <ArrowRight className="mr-2 h-5 w-5" />
+              Join Team
             </Button>
           </div>
         </div>
+
+        {/* Add CompeteSection */}
+        <CompeteSection />
       </main>
       <Footer />
     </div>

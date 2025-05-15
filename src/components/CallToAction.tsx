@@ -1,9 +1,40 @@
-
 import React from "react";
+import { useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Trophy, Users } from "lucide-react";
+import { useAuth } from "@/context/AuthContext";
+import { toast } from "@/hooks/use-toast";
 
 const CallToAction = () => {
+  const navigate = useNavigate();
+  const { user } = useAuth();
+
+  const handleJoinTournament = () => {
+    if (!user) {
+      toast({
+        title: "Authentication Required",
+        description: "Please sign in to join tournaments",
+        variant: "destructive",
+      });
+      navigate("/login");
+      return;
+    }
+    navigate("/tournaments");
+  };
+
+  const handleCreateTeam = () => {
+    if (!user) {
+      toast({
+        title: "Authentication Required",
+        description: "Please sign in to create a team",
+        variant: "destructive",
+      });
+      navigate("/login");
+      return;
+    }
+    navigate("/teams/create");
+  };
+
   return (
     <div className="container mx-auto px-4 py-16">
       <div className="gamer-card p-8 md:p-12 relative overflow-hidden">
@@ -24,6 +55,7 @@ const CallToAction = () => {
               <Button
                 size="lg"
                 className="bg-gaming-purple hover:bg-gaming-purple-bright text-white transition-all group"
+                onClick={handleJoinTournament}
               >
                 <Trophy className="mr-2 h-5 w-5 group-hover:animate-float" />
                 Join Tournament
@@ -32,6 +64,7 @@ const CallToAction = () => {
                 size="lg"
                 variant="outline"
                 className="border-gaming-purple/50 text-gaming-purple hover:bg-gaming-purple/20 hover:text-white transition-all"
+                onClick={handleCreateTeam}
               >
                 <Users className="mr-2 h-5 w-5" />
                 Create Team

@@ -25,7 +25,7 @@ const Navbar = () => {
               <div className="relative w-8 h-8 rounded-full bg-gaming-purple animate-pulse-glow flex items-center justify-center">
                 <Trophy className="w-5 h-5 text-gaming-dark" />
               </div>
-              <span className="text-xl font-bold text-gradient-primary">FireTourneys</span>
+              <span className="text-xl font-bold text-gradient-primary">EZ-esport</span>
             </Link>
           </div>
 
@@ -68,11 +68,11 @@ const Navbar = () => {
       {/* Mobile Navigation Menu */}
       <div
         className={cn(
-          "fixed inset-0 top-16 bg-gaming-dark-purple/95 backdrop-blur-sm transition-all duration-300 ease-in-out md:hidden",
+          "fixed inset-0 top-16 bg-gaming-dark-purple/95 backdrop-blur-md transition-all duration-300 ease-in-out md:hidden",
           isOpen ? "opacity-100 translate-x-0" : "opacity-0 -translate-x-full pointer-events-none"
         )}
       >
-        <nav className="flex flex-col p-4 gap-2">
+        <nav className="flex flex-col p-4 gap-2 bg-gaming-dark-purple/95 min-h-screen">
           {navLinks.map((link) => (
             <Link
               key={link.title}
@@ -84,8 +84,19 @@ const Navbar = () => {
               {link.title}
             </Link>
           ))}
-          <div className="flex flex-col mt-4 gap-3 px-4">
+          <div className="mt-4 px-4">
             <NavbarAuth isMobile={true} closeMenu={() => setIsOpen(false)} />
+          </div>
+          <div className="mt-4 px-4">
+            <a
+              href="https://chat.whatsapp.com/DSSqyYx2YCjBk39ggy9rxg"
+              target="_blank"
+              rel="noopener noreferrer"
+              onClick={() => setIsOpen(false)}
+              className="w-full px-4 py-2 rounded-md bg-green-600 hover:bg-green-700 text-white font-semibold transition-colors inline-block text-center"
+            >
+              Join WhatsApp Community
+            </a>
           </div>
         </nav>
       </div>
