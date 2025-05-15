@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from "react";
 import { ArrowRight } from "lucide-react";
 import { Button } from "@/components/ui/button";
@@ -45,8 +44,8 @@ const TournamentSection = () => {
       prizePool: "₹100,000",
       entryFee: "₹1,000",
       teamSize: "Squad (4 players)",
-      mode: "Online",
-      status: "Registration Open",
+      mode: "Online" as "Online" | "Offline" | "Hybrid", // Fix type with assertion
+      status: "Registration Open" as "Registration Open" | "Ongoing" | "Completed", // Fix type with assertion
       registeredTeams: 64,
       maxTeams: 128,
     },
@@ -57,8 +56,8 @@ const TournamentSection = () => {
       prizePool: "₹50,000",
       entryFee: "₹500",
       teamSize: "Squad (4 players)",
-      mode: "Online",
-      status: "Registration Open",
+      mode: "Online" as "Online" | "Offline" | "Hybrid", // Fix type with assertion
+      status: "Registration Open" as "Registration Open" | "Ongoing" | "Completed", // Fix type with assertion
       registeredTeams: 42,
       maxTeams: 64,
     },
@@ -69,8 +68,8 @@ const TournamentSection = () => {
       prizePool: "₹25,000",
       entryFee: "₹200",
       teamSize: "Solo",
-      mode: "Online",
-      status: "Registration Open",
+      mode: "Online" as "Online" | "Offline" | "Hybrid", // Fix type with assertion
+      status: "Registration Open" as "Registration Open" | "Ongoing" | "Completed", // Fix type with assertion
       registeredTeams: 85,
       maxTeams: 100,
     },
@@ -81,8 +80,8 @@ const TournamentSection = () => {
       prizePool: "₹200,000",
       entryFee: "₹2,000",
       teamSize: "Squad (4 players)",
-      mode: "Offline",
-      status: "Registration Open",
+      mode: "Offline" as "Online" | "Offline" | "Hybrid", // Fix type with assertion
+      status: "Registration Open" as "Registration Open" | "Ongoing" | "Completed", // Fix type with assertion
       registeredTeams: 12,
       maxTeams: 32,
     },

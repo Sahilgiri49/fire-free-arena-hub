@@ -13,6 +13,7 @@ type Tournament = Tables<"tournaments">;
 export interface TournamentCardData {
   title: string;
   image?: string;
+  image_url?: string; // Add this property to fix the error
   date: string;
   prizePool: string;
   entryFee: string;
@@ -21,7 +22,6 @@ export interface TournamentCardData {
   status: "Registration Open" | "Ongoing" | "Completed";
   registeredTeams?: number;
   maxTeams: number;
-  image_url?: string;
 }
 
 interface TournamentCardProps {
@@ -30,6 +30,7 @@ interface TournamentCardProps {
   // Accept legacy props format for backward compatibility
   title?: string;
   image?: string;
+  image_url?: string; // Add this property to fix the error
   date?: string;
   prizePool?: string;
   entryFee?: string;
@@ -48,7 +49,7 @@ const TournamentCard: React.FC<TournamentCardProps> = (props) => {
   const tournament = props.tournament || {
     id: "",
     title: props.title || "",
-    image_url: props.image || props.image_url || "",
+    image_url: props.image_url || props.image || "",
     start_date: props.date ? new Date(props.date).toISOString() : new Date().toISOString(),
     prize_pool: props.prizePool || "",
     entry_fee: props.entryFee || "",
