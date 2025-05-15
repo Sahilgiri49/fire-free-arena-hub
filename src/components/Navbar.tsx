@@ -1,4 +1,3 @@
-
 import React, { useState } from "react";
 import { Link } from "react-router-dom";
 import { Button } from "@/components/ui/button";
@@ -46,6 +45,14 @@ const Navbar = () => {
 
           <div className="hidden md:flex items-center gap-4">
             <NavbarAuth />
+            <a
+              href="https://chat.whatsapp.com/DSSqyYx2YCjBk39ggy9rxg"
+              target="_blank"
+              rel="noopener noreferrer"
+              className="ml-4 px-4 py-2 rounded-md bg-green-600 hover:bg-green-700 text-white font-semibold transition-colors"
+            >
+              Join WhatsApp Community
+            </a>
           </div>
 
           {/* Mobile Navigation Button */}

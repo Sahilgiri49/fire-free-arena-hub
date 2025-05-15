@@ -1,11 +1,10 @@
-
 import React from "react";
 import { useAuth } from "@/context/AuthContext";
 import Navbar from "@/components/Navbar";
 import Footer from "@/components/Footer";
 import { Button } from "@/components/ui/button";
 import { Link } from "react-router-dom";
-import { Trophy, Users, Calendar, Bell } from "lucide-react";
+import { Trophy, Users, Calendar, Bell, Video } from "lucide-react";
 
 const AdminDashboard = () => {
   const { profile } = useAuth();
@@ -45,6 +44,13 @@ const AdminDashboard = () => {
       description: "Publish news and announcements",
       href: "/admin/news",
       color: "bg-red-600",
+    },
+    {
+      title: "Live Streams",
+      icon: <Video className="h-10 w-10" />,
+      description: "Manage and update live streams",
+      href: "/admin/streams",
+      color: "bg-blue-400",
     },
   ];
 

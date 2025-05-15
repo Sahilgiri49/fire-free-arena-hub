@@ -62,7 +62,7 @@ const Hero = () => {
           <div className="relative lg:block">
             <div className="gamer-card p-3 neon-glow animate-pulse-glow">
               <img 
-                src="https://images.unsplash.com/photo-1605810230434-7631ac76ec81" 
+                src="https://raw.githubusercontent.com/Sahilgiri49/fire-free-arena-hub/main/assest/home%20page.jpg" 
                 alt="Free Fire Tournament" 
                 className="w-full h-auto rounded-lg object-cover aspect-[4/3]"
                 loading="lazy"

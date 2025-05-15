@@ -33,6 +33,7 @@ const AdminLeaderboard = () => {
     kills: 0,
     deaths: 0,
     assists: 0,
+    points: 0,
   });
   const [profiles, setProfiles] = useState<{id: string, username: string, full_name: string}[]>([]);
 
@@ -135,12 +136,21 @@ const AdminLeaderboard = () => {
     try {
       const kd_ratio = addForm.deaths > 0 ? Number((addForm.kills / addForm.deaths).toFixed(2)) : addForm.kills;
       const { error } = await supabase.from('player_stats').insert([
-        { ...addForm, kd_ratio }
+        {
+          profile_id: addForm.profile_id,
+          total_matches: addForm.total_matches,
+          wins: addForm.wins,
+          kills: addForm.kills,
+          deaths: addForm.deaths,
+          assists: addForm.assists,
+          kd_ratio,
+          points: addForm.points,
+        },
       ]);
       if (error) throw error;
       toast({ title: 'Player Added', description: 'Player stats added to leaderboard!' });
       setShowAddForm(false);
-      setAddForm({ profile_id: '', total_matches: 0, wins: 0, kills: 0, deaths: 0, assists: 0 });
+      setAddForm({ profile_id: '', total_matches: 0, wins: 0, kills: 0, deaths: 0, assists: 0, points: 0 });
       fetchPlayerStats();
     } catch (error) {
       toast({ title: 'Add Failed', description: 'Failed to add player', variant: 'destructive' });
@@ -222,6 +232,17 @@ const AdminLeaderboard = () => {
                     <label className="block text-sm font-medium mb-1">Assists</label>
                     <Input type="number" min="0" value={addForm.assists} onChange={e => setAddForm({ ...addForm, assists: parseInt(e.target.value) || 0 })} required />
                   </div>
+                </div>
+                <div>
+                  <label className="block text-sm font-medium mb-1">Points</label>
+                  <Input
+                    name="points"
+                    type="number"
+                    value={addForm.points}
+                    onChange={e => setAddForm({ ...addForm, points: Number(e.target.value) })}
+                    placeholder="Points"
+                    className="mb-2"
+                  />
                 </div>
                 <Button type="submit" className="bg-gaming-purple hover:bg-gaming-purple-bright">Add Player</Button>
               </form>

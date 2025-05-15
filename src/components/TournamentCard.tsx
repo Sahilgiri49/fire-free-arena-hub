@@ -202,18 +202,20 @@ const TournamentCard: React.FC<TournamentCardProps> = (props) => {
   };
 
   // Use a default image if none is provided
-  const imageUrl = tournament.image_url || props.image || "https://images.unsplash.com/photo-1542751371-adc38448a05e?q=80&w=1770&auto=format&fit=crop&ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D";
+  const imageUrl = tournament.image_url || props.image || "https://raw.githubusercontent.com/Sahilgiri49/fire-free-arena-hub/main/assest/Garena_Free_Fire_0.jpg";
 
   return (
     <>
       <div className="gamer-card h-full flex flex-col cursor-pointer transform hover:scale-[1.01] transition-all duration-200" onClick={viewTournament}>
-        <div
-          className="h-40 bg-cover bg-center rounded-t-lg relative"
-          style={{
-            backgroundImage: `url(${imageUrl})`,
-          }}
-        >
-          <div className="absolute inset-0 bg-gradient-to-t from-black/80 to-transparent"></div>
+        <div className="relative h-40">
+          <img
+            src={imageUrl}
+            alt={tournament.title}
+            className="w-full h-40 object-cover rounded-t-lg"
+            loading="lazy"
+            onError={e => { e.currentTarget.src = "https://raw.githubusercontent.com/Sahilgiri49/fire-free-arena-hub/main/assest/Garena_Free_Fire_0.jpg"; }}
+          />
+          <div className="absolute inset-0 bg-gradient-to-t from-black/80 to-transparent rounded-t-lg"></div>
           <div className="absolute bottom-2 left-3">
             <span className="px-2 py-1 text-xs rounded bg-gaming-purple text-white">
               {tournament.team_size}

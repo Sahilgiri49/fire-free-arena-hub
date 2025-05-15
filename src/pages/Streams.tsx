@@ -1,10 +1,10 @@
-
-import React from "react";
+import React, { useState, useEffect } from "react";
 import Navbar from "@/components/Navbar";
 import Footer from "@/components/Footer";
 import { Video, Users, ArrowRight, Calendar } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
+import { supabase } from "@/integrations/supabase/client";
 
 interface StreamCardProps {
   title: string;
@@ -98,7 +98,24 @@ const StreamCard = ({
 };
 
 const Streams = () => {
-  const liveStreams = [
+  const [streams, setStreams] = useState<any[]>([]);
+  const [isLoading, setIsLoading] = useState(true);
+
+  useEffect(() => {
+    const fetchStreams = async () => {
+      setIsLoading(true);
+      const { data, error } = await supabase
+        .from("streams")
+        .select("*")
+        .order("scheduled_for", { ascending: true });
+      if (!error) setStreams(data || []);
+      setIsLoading(false);
+    };
+    fetchStreams();
+  }, []);
+
+  // Fallback mock data
+  const mockStreams = [
     {
       title: "Free Fire Pro League Season 4 - Day 2",
       thumbnail: "https://images.unsplash.com/photo-1605810230434-7631ac76ec81",
@@ -128,69 +145,13 @@ const Streams = () => {
     },
   ];
 
-  const upcomingStreams = [
-    {
-      title: "Free Fire Pro League Season 5 - Opening Day",
-      thumbnail: "https://images.unsplash.com/photo-1487058792275-0ad4aaf24ca7",
-      viewers: 0,
-      streamer: "Official Free Fire Channel",
-      streamUrl: "#",
-      isLive: false,
-      scheduled: "May 25, 18:00 IST",
-      description: "The biggest Free Fire tournament kicks off!"
-    },
-    {
-      title: "Free Fire Masters Cup - Group Stage Draw",
-      thumbnail: "https://images.unsplash.com/photo-1526374965328-7f61d4dc18c5",
-      viewers: 0,
-      streamer: "Free Fire Esports",
-      streamUrl: "#",
-      isLive: false,
-      scheduled: "May 28, 16:00 IST",
-      description: "Find out which group your favorite team is in"
-    },
-    {
-      title: "Free Fire Solo Championship - Qualifier Preview",
-      thumbnail: "https://images.unsplash.com/photo-1605810230434-7631ac76ec81",
-      viewers: 0,
-      streamer: "Pro Gaming Network",
-      streamUrl: "#",
-      isLive: false,
-      scheduled: "May 30, 20:00 IST",
-      description: "Analysis of the top solo players to watch"
-    },
-    {
-      title: "Delhi LAN Tournament - Venue Tour",
-      thumbnail: "https://images.unsplash.com/photo-1470071459604-3b5ec3a7fe05",
-      viewers: 0,
-      streamer: "Gaming Academy",
-      streamUrl: "#",
-      isLive: false,
-      scheduled: "June 5, 15:00 IST",
-      description: "First look at the arena for the upcoming LAN event"
-    },
-  ];
-  
-  const pastStreams = [
-    {
-      title: "Free Fire Pro League Season 4 - Finals Highlights",
-      thumbnail: "https://images.unsplash.com/photo-1487058792275-0ad4aaf24ca7",
-      viewers: 42650,
-      streamer: "Official Free Fire Channel",
-      streamUrl: "#",
-      isLive: false,
-      description: "The thrilling conclusion to last season"
-    },
-    {
-      title: "Pro Player Analysis - Best Plays of the Month",
-      thumbnail: "https://images.unsplash.com/photo-1526374965328-7f61d4dc18c5",
-      viewers: 18340,
-      streamer: "Pro Gaming Network",
-      streamUrl: "#",
-      isLive: false,
-      description: "Learn strategies from the best in the game"
-    },
-  ];
+  const displayStreams = streams.length > 0 ? streams : mockStreams;
+
+  // Split streams into live, upcoming, and past
+  const now = new Date();
+  const liveStreams = displayStreams.filter(s => s.is_live);
+  const upcomingStreams = displayStreams.filter(s => !s.is_live && new Date(s.scheduled_for) > now);
+  const pastStreams = displayStreams.filter(s => !s.is_live && new Date(s.scheduled_for) <= now);
 
   return (
     <div className="min-h-screen flex flex-col">
@@ -204,105 +165,78 @@ const Streams = () => {
             </p>
           </div>
 
-          {/* Featured Stream */}
-          <div className="gamer-card overflow-hidden mb-8">
-            <div className="grid grid-cols-1 lg:grid-cols-3">
-              <div className="lg:col-span-2 relative">
-                <div className="aspect-video bg-gaming-dark">
-                  <iframe
-                    width="100%"
-                    height="100%"
-                    src="https://www.youtube.com/embed/dQw4w9WgXcQ?autoplay=0"
-                    title="Featured Stream"
-                    frameBorder="0"
-                    allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
-                    allowFullScreen
-                    className="absolute inset-0 w-full h-full"
-                  ></iframe>
+          {isLoading ? (
+            <div className="flex justify-center items-center py-20">
+              <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-gaming-purple"></div>
+            </div>
+          ) : (
+            <>
+              {/* Live Now */}
+              <div className="mb-12">
+                <h2 className="text-2xl font-bold text-white mb-6">Live Now</h2>
+                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                  {liveStreams.map((stream, index) => (
+                    <StreamCard
+                      key={stream.id || index}
+                      title={stream.title}
+                      thumbnail={stream.thumbnail_url}
+                      viewers={stream.viewers || 0}
+                      streamer={stream.streamer || ""}
+                      streamUrl={stream.stream_url}
+                      isLive={stream.is_live}
+                      scheduled={stream.scheduled_for ? new Date(stream.scheduled_for).toLocaleString() : undefined}
+                      description={stream.description}
+                    />
+                  ))}
                 </div>
               </div>
-              <div className="p-6 flex flex-col">
-                <div className="flex items-center gap-2 mb-2">
-                  <span className="bg-red-600 text-white text-xs font-bold px-2 py-1 rounded-md flex items-center gap-1">
-                    <span className="relative flex h-2 w-2">
-                      <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-white opacity-75"></span>
-                      <span className="relative inline-flex rounded-full h-2 w-2 bg-white"></span>
-                    </span>
-                    LIVE NOW
-                  </span>
-                  <span className="bg-black/70 text-white text-xs px-2 py-1 rounded flex items-center gap-1">
-                    <Users className="h-3 w-3" />
-                    18,245 viewers
-                  </span>
+              {/* Upcoming Streams */}
+              <div className="mb-12">
+                <h2 className="text-2xl font-bold text-white mb-6">Upcoming Streams</h2>
+                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+                  {upcomingStreams.map((stream, index) => (
+                    <StreamCard
+                      key={stream.id || index}
+                      title={stream.title}
+                      thumbnail={stream.thumbnail_url}
+                      viewers={stream.viewers || 0}
+                      streamer={stream.streamer || ""}
+                      streamUrl={stream.stream_url}
+                      isLive={stream.is_live}
+                      scheduled={stream.scheduled_for ? new Date(stream.scheduled_for).toLocaleString() : undefined}
+                      description={stream.description}
+                    />
+                  ))}
                 </div>
-                <h2 className="text-2xl font-bold text-white mb-2">
-                  Free Fire Pro League Season 4 - Grand Finals
-                </h2>
-                <p className="text-white/70 mb-2">
-                  Official Free Fire Channel
-                </p>
-                <p className="text-white/60 text-sm mb-6 flex-grow">
-                  Watch the top teams battle for the championship title and a prize pool of ₹1,000,000! 
-                  Don't miss the action as Neon Strikers, Phoenix Squad, Team Inferno and Ghost Hunters 
-                  face off in the grand finals.
-                </p>
-                <div className="flex gap-3">
-                  <Button
-                    className="bg-gaming-purple hover:bg-gaming-purple-bright text-white grow"
+              </div>
+              {/* Past Streams */}
+              <h2 className="text-2xl font-bold text-white mb-6">Past Broadcasts</h2>
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                {pastStreams.map((stream, index) => (
+                  <StreamCard
+                    key={stream.id || index}
+                    title={stream.title}
+                    thumbnail={stream.thumbnail_url}
+                    viewers={stream.viewers || 0}
+                    streamer={stream.streamer || ""}
+                    streamUrl={stream.stream_url}
+                    isLive={stream.is_live}
+                    scheduled={stream.scheduled_for ? new Date(stream.scheduled_for).toLocaleString() : undefined}
+                    description={stream.description}
+                  />
+                ))}
+                <div className="col-span-full text-center mt-4">
+                  <Button 
+                    variant="outline" 
+                    className="border-gaming-purple/50 text-gaming-purple hover:bg-gaming-purple/20 hover:text-white"
                   >
-                    <Video className="mr-2 h-4 w-4" />
-                    Watch Full Screen
-                  </Button>
-                  <Button
-                    variant="outline"
-                    className="border-gaming-purple/50 hover:bg-gaming-purple/20 hover:text-white"
-                  >
-                    Share
+                    View All Past Broadcasts
+                    <ArrowRight className="ml-2 h-4 w-4" />
                   </Button>
                 </div>
               </div>
-            </div>
-          </div>
-
-          {/* Current Live Streams */}
-          <div className="mb-12">
-            <h2 className="text-2xl font-bold text-white mb-6">Live Now</h2>
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-              {liveStreams.map((stream, index) => (
-                <StreamCard key={index} {...stream} />
-              ))}
-            </div>
-          </div>
-          
-          {/* Upcoming Streams */}
-          <div className="mb-12">
-            <h2 className="text-2xl font-bold text-white mb-6">Upcoming Streams</h2>
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-              {upcomingStreams.map((stream, index) => (
-                <StreamCard key={index} {...stream} />
-              ))}
-            </div>
-          </div>
-          
-          {/* Past Streams */}
-          <div>
-            <h2 className="text-2xl font-bold text-white mb-6">Past Broadcasts</h2>
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-              {pastStreams.map((stream, index) => (
-                <StreamCard key={index} {...stream} />
-              ))}
-              
-              <div className="col-span-full text-center mt-4">
-                <Button 
-                  variant="outline" 
-                  className="border-gaming-purple/50 text-gaming-purple hover:bg-gaming-purple/20 hover:text-white"
-                >
-                  View All Past Broadcasts
-                  <ArrowRight className="ml-2 h-4 w-4" />
-                </Button>
-              </div>
-            </div>
-          </div>
+            </>
+          )}
         </div>
       </main>
       <Footer />

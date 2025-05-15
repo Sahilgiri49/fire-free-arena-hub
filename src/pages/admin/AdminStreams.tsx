@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from "react";
 import Navbar from "@/components/Navbar";
 import Footer from "@/components/Footer";
@@ -7,6 +6,7 @@ import { Input } from "@/components/ui/input";
 import { toast } from "@/hooks/use-toast";
 import { useNavigate } from "react-router-dom";
 import { useAuth } from "@/context/AuthContext";
+import { supabase } from "@/integrations/supabase/client";
 
 // Define a mock stream type since there's no streams table in Supabase yet
 interface Stream {
@@ -87,20 +87,21 @@ const AdminStreams = () => {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setIsLoading(true);
-    
     try {
-      // Mock adding a stream - would be replaced with Supabase
-      // const { data, error } = await supabase.from("streams").insert([newStream]).select();
-      
-      // Mock implementation
-      const newStreamWithId: Stream = {
-        ...newStream,
-        id: Date.now().toString(),
-        is_live: false,
-        scheduled_for: newStream.scheduled_for || new Date().toISOString(),
-      };
-      
-      setStreams(prev => [...prev, newStreamWithId]);
+      // Insert into Supabase
+      const { error } = await supabase.from("streams").insert([
+        {
+          title: newStream.title,
+          description: newStream.description,
+          stream_url: newStream.stream_url,
+          thumbnail_url: newStream.thumbnail_url,
+          is_live: false,
+          scheduled_for: newStream.scheduled_for || new Date().toISOString(),
+          streamer: user?.user_metadata?.full_name || user?.email || "",
+          viewers: 0
+        }
+      ]);
+      if (error) throw error;
       setNewStream({
         title: "",
         description: "",
@@ -108,11 +109,12 @@ const AdminStreams = () => {
         thumbnail_url: "",
         scheduled_for: "",
       });
-      
       toast({
         title: "Success",
         description: "Stream added successfully",
       });
+      // Fetch updated streams from Supabase
+      fetchStreams();
     } catch (error) {
       console.error("Error adding stream:", error);
       toast({
@@ -143,6 +145,18 @@ const AdminStreams = () => {
         description: "Failed to delete stream",
         variant: "destructive",
       });
+    }
+  };
+
+  const fetchStreams = async () => {
+    setIsLoading(true);
+    try {
+      const { data, error } = await supabase.from("streams").select("*").order("scheduled_for", { ascending: true });
+      if (!error) setStreams(data || []);
+    } catch (error) {
+      toast({ title: "Error", description: "Failed to fetch streams", variant: "destructive" });
+    } finally {
+      setIsLoading(false);
     }
   };
 
